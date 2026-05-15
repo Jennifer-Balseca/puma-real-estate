@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Documentación y notas personales
+tesis-doc/
+github/
+
+# Variables de entorno 
+.env
+.env.local
