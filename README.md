@@ -85,12 +85,12 @@ cd ../client
 npm ci
 ```
 
-- Mantenga y versione el archivo `package-lock.json` para garantizar instalaciones consistentes entre entornos.
-- Para actualizar dependencias de forma controlada puede usar `npx npm-check-updates -u` seguido de `npm install`.
-- Use `npm audit` regularmente para detectar vulnerabilidades y `npm audit fix` cuando sea seguro hacerlo.
+- Mantén y versiona el archivo `package-lock.json` para garantizar instalaciones consistentes entre entornos.
+- Para actualizar dependencias de forma controlada puedes usar `npx npm-check-updates -u` seguido de `npm install`.
+- Usa `npm audit` regularmente para detectar vulnerabilidades y `npm audit fix` cuando sea seguro hacerlo.
 - Las herramientas de desarrollo deben preferiblemente instalarse como `devDependencies` y ejecutarse a través de scripts de `package.json` (por ejemplo `npm run lint`).
 
-Nota: Este repositorio utiliza `npm`; si desea cambiar a `yarn` o `pnpm`, actualice la documentación y los archivos de bloqueo (`yarn.lock` o `pnpm-lock.yaml`) en consecuencia.
+Nota: Este repositorio utiliza `npm`; si deseas cambiar a `yarn` o `pnpm`, actualiza la documentación y los archivos de bloqueo (`yarn.lock` o `pnpm-lock.yaml`) en consecuencia.
 
 ---
 
@@ -99,7 +99,7 @@ Antes de ejecutar el proyecto, el usuario debe tener instalados:
 
 | Herramienta / Servicio | Versión Recomendada | Descripción |
 |------------------------|---------------------|-------------|
-| Git | Última estable | Clonar y versionar el proyecto |
+| Git | Última estable | Clonar y versi0onar el proyecto |
 | Node.js | 18 o superior | Ejecutar el backend y el frontend |
 | npm | 9 o superior | Instalar dependencias y correr scripts |
 | React | 19.x | Framework de interfaz usado en el frontend |
@@ -120,10 +120,10 @@ git clone https://github.com/Jennifer-Balseca/puma-real-estate.git
 cd puma-real-estate
 ```
 
-Si el proyecto ya está abierto en VS Code como carpeta local, no es necesario volver a clonarlo; solo ubíquese en la raíz del repositorio.
+Si el proyecto ya está abierto en VS Code como carpeta local, no es necesario volver a clonarlo; solo ubícate en la raíz del repositorio.
 
 ### 2. Configuración de variables de entorno
-Cree un archivo `server/.env` basado en el archivo de ejemplo `server/.env.example` (ubicado en la carpeta `server`).
+Crea un archivo `server/.env` basado en el archivo de ejemplo `server/.env.example` (ubicado en la carpeta `server`).
 
 **Variables requeridas:**
 
@@ -411,11 +411,11 @@ Actualmente no hay suite de tests automatizadas. El script `npm test` es un plac
 
 ```text
 ./
-  .gitignore                    # Exclusiones de git (node_modules, .env, etc.)
-  README.md                     # Este archivo
+  .gitignore                    
+  README.md                     
   modelado-datos/
-    diagrama_modelado_datos.svg # Diagrama ER de la BD
-  client/                       # Frontend (React + Vite)
+    diagrama_modelado_datos.svg 
+  client/                         
     .gitignore
     eslint.config.js
     index.html
@@ -464,9 +464,9 @@ Actualmente no hay suite de tests automatizadas. El script `npm test` es un plac
 - **CSV / JSON:** para importar datos de prueba o catálogos iniciales (ubicar en carpeta `data/` si existe).
 - **Imágenes de propiedades:** material visual (se cargarían vía Firebase Storage).
 - **Backups de BD:** dumps de MongoDB Atlas (guardar en carpeta `server/backups/` si se implementa).
-- **Credenciales Firebase:** solo si se activa la funcionalidad de multimedia (por ahora opcional).
+- **Credenciales Firebase:** solo si se activa la funcionalidad de multimedia.
 
-### Firebase (Opcional)
+### Firebase 
 Esta fase del proyecto **no requiere Firebase** para funcionar. Las variables de Firebase en `.env` son opcionales para futuras funcionalidades de carga de imágenes. Si deseas habilitarlas:
 1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com).
 2. Configura Firebase Storage.
@@ -527,6 +527,3 @@ Proyecto académico. Puede utilizarse licencia MIT si se desea.
 
 ---
 
-## 📞 Contacto y Soporte
-
-Este proyecto fue desarrollado por **Jennifer Balseca** como tesis de grado en **Tecnología Superior en Desarrollo de Software**. Para dudas técnicas o sugerencias, consulta el repositorio en GitHub o contacta al docente responsable, **Jonathan Quespaz**.
