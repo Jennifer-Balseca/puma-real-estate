@@ -6,15 +6,17 @@ const User = require('../models/User');
 const Property = require('../models/Property');
 const Appointment = require('../models/Appointment');
 
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI_DIRECT || process.env.MONGO_URI;
 
 if (!MONGO_URI) {
-  console.error('Falta MONGO_URI en las variables de entorno. Revisa server/.env');
+  console.error('Falta MONGO_URI o MONGO_URI_DIRECT en las variables de entorno. Revisa server/.env');
   process.exit(1);
 }
 
 const connectDB = async () => {
   return mongoose.connect(MONGO_URI, {
+    serverSelectionTimeoutMS: 30000,
+    family: 4
   });
 };
 
@@ -23,21 +25,38 @@ const seed = async () => {
     await connectDB();
     console.log('Conectado a MongoDB para seed');
 
-    const ensureUser = async ({ nombre, email, password, rol }) => {
+    const ensureUser = async ({ email, password, role, status = 'Activo' }) => {
       let user = await User.findOne({ email });
       if (!user) {
         const hash = await bcrypt.hash(password, 10);
-        user = new User({ nombre, email, password: hash, rol });
+        user = new User({ email, password: hash, role, status });
         await user.save();
         console.log(`Usuario creado: ${email}`);
       } else {
+        let updated = false;
+
+        if (!user.role) {
+          user.role = role;
+          updated = true;
+        }
+
+        if (!user.status) {
+          user.status = status;
+          updated = true;
+        }
+
+        if (updated) {
+          await user.save();
+          console.log(`Usuario actualizado: ${email}`);
+        }
+
         console.log(`Usuario ya existe: ${email}`);
       }
       return user;
     };
 
-    const admin = await ensureUser({ nombre: 'Admin Demo', email: 'admin@example.com', password: 'admin123', rol: 'admin' });
-    const agente = await ensureUser({ nombre: 'Agente Demo', email: 'agente@example.com', password: 'agent123', rol: 'agente' });
+    const admin = await ensureUser({ email: 'admin@pumarealestate.com', password: '12345', role: 'Admin', status: 'Activo' });
+    const agente = await ensureUser({ email: 'agente@pumarealestate.com', password: 'agente123', role: 'Agente', status: 'Activo' });
 
     const agentUser = agente || admin;
 
