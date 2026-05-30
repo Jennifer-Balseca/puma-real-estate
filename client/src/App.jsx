@@ -1,122 +1,135 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Navigate, Route, Routes } from 'react-router-dom';
+import PlaceholderPage from './components/PlaceholderPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminLayout from './layouts/AdminLayout';
+import AgentLayout from './layouts/AgentLayout';
+import PublicLayout from './layouts/PublicLayout';
+import { useAuth } from './context/AuthContext';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminAgentes from './pages/AdminAgentes';
+import AgentDashboard from './pages/AgentDashboard';
+import LoginPage from './pages/LoginPage';
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+  const { initializing, isAuthenticated, role } = useAuth();
+
+  if (initializing) {
+    return null;
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to={role === 'Admin' ? '/admin' : '/agente'} replace />
+          ) : (
+            <Navigate to="/inicio" replace />
+          )
+        }
+      />
 
-      <div className="ticks"></div>
+      <Route element={<PublicLayout />}>
+        <Route
+          path="/inicio"
+          element={
+            <PlaceholderPage
+              subtitle="Inicio"
+              title="Bienvenido a Puma Real Estate"
+              description="Portal público de la inmobiliaria, pensado para mostrar propiedades, servicios y acceso al panel de gestión."
+            />
+          }
+        />
+        <Route
+          path="/nosotros"
+          element={
+            <PlaceholderPage
+              subtitle="Nosotros"
+              title="Historia, valores y visión"
+              description="Sección informativa para presentar la marca, el enfoque premium y la propuesta de valor de Puma Real Estate."
+            />
+          }
+        />
+        <Route
+          path="/contacto"
+          element={
+            <PlaceholderPage
+              subtitle="Contacto"
+              title="Comunicación directa"
+              description="Zona para los datos de contacto, botones rápidos y futuros canales de atención al cliente."
+            />
+          }
+        />
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+        <Route element={<AdminLayout />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/agentes" element={<AdminAgentes />} />
+          <Route
+            path="/admin/propiedades"
+            element={
+              <PlaceholderPage
+                subtitle="Propiedades"
+                title="Inventario administrativo"
+                description="Vista base para supervisar el inventario general y su estado dentro del sistema."
+              />
+            }
+          />
+        </Route>
+      </Route>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
+      <Route element={<ProtectedRoute allowedRoles={['Agente']} />}>
+        <Route path="/agente" element={<AgentDashboard />} />
+        <Route element={<AgentLayout />}>
+          <Route
+            path="/agente/inventario"
+            element={
+              <PlaceholderPage
+                subtitle="Inventario"
+                title="Inventario asignado"
+                description="Sección base para listar, crear y editar las propiedades del agente."
+              />
+            }
+          />
+          <Route
+            path="/agente/solicitudes"
+            element={
+              <PlaceholderPage
+                subtitle="Solicitudes Disponibles"
+                title="Cola de solicitudes"
+                description="Vista base para revisar y priorizar las solicitudes que esperan atención."
+              />
+            }
+          />
+          <Route
+            path="/agente/agenda"
+            element={
+              <PlaceholderPage
+                subtitle="Mi Agenda"
+                title="Agenda operativa"
+                description="Vista base para controlar visitas programadas, pendientes y completadas."
+              />
+            }
+          />
+          <Route
+            path="/agente/nueva-propiedad"
+            element={
+              <PlaceholderPage
+                subtitle="Registrar Propiedad"
+                title="Alta de propiedades"
+                description="Formulario base para dar de alta nuevas propiedades asignadas al agente."
+              />
+            }
+          />
+        </Route>
+      </Route>
 
-export default App
+      <Route path="*" element={<Navigate to="/inicio" replace />} />
+    </Routes>
+  );
+};
+
+export default App;
