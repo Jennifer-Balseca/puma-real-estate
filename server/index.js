@@ -5,6 +5,7 @@ const cors = require('cors');
 const conectarDB = require('./config/db.js');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const propertyRoutes = require('./routes/propertyRoutes');
 const { authMiddleware } = require('./middleware/authMiddleware');
 
 const app = express();
@@ -23,6 +24,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', authMiddleware, adminRoutes);
+app.use('/api/properties', propertyRoutes);
 
 app.get('/health', (req, res) => {
     const isConnected = mongoose.connection.readyState === 1;

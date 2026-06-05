@@ -298,7 +298,7 @@ const AdminAgentes = () => {
                               </div>
                               <div>
                                 <p className="font-subtitle text-white">{fullName}</p>
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-600">HU 01</p>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-600"></p>
                               </div>
                             </div>
                           </td>

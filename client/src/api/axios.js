@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { emitPropertiesRefresh } from '../utils/propertyEvents';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5000',
@@ -19,6 +20,17 @@ api.interceptors.request.use((config) => {
   }
 
   return config;
+});
+
+api.interceptors.response.use((response) => {
+  const method = String(response.config?.method ?? '').toLowerCase();
+  const url = String(response.config?.url ?? '');
+
+  if (url.includes('/api/properties') && ['post', 'put', 'delete'].includes(method)) {
+    emitPropertiesRefresh();
+  }
+
+  return response;
 });
 
 export default api;
