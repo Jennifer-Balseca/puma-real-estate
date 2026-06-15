@@ -31,6 +31,8 @@ const propertySchema = new mongoose.Schema({
         parqueadero: { type: Boolean, default: false }
     },
     imagenes: [{ type: String }], 
+    mediaUrls: [{ type: String }],
+    storagePaths: [{ type: String }],
     createdBy: {
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User', 

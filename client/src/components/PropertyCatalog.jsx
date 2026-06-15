@@ -128,14 +128,12 @@ const PropertyCatalog = ({ mode = 'public' }) => {
   };
 
   const renderCardActions = (property, allowManageActions) => {
-    if (mode === 'public') {
-      return null;
-    }
+    if (mode === 'public') return null;
+
+    const canManage = canManageProperty(property);
 
     if (mode === 'agent') {
-      if (!allowManageActions || !canManageProperty(property)) {
-        return null;
-      }
+      if (!allowManageActions || !canManage) return null;
 
       return (
         <div className="mt-4 space-y-3">
@@ -166,26 +164,27 @@ const PropertyCatalog = ({ mode = 'public' }) => {
           </div>
 
           <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => handleEdit(property)}
-            className="border border-primary-container px-4 py-2 text-xs uppercase tracking-[0.2em] text-primary-container transition hover:bg-primary-container hover:text-black"
-          >
-            Editar
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDelete(property._id)}
-            disabled={deletingId === property._id}
-            className="border border-red-500/40 px-4 py-2 text-xs uppercase tracking-[0.2em] text-red-300 transition hover:bg-red-500 hover:text-black disabled:opacity-70"
-          >
-            {deletingId === property._id ? 'Eliminando...' : 'Eliminar'}
-          </button>
+            <button
+              type="button"
+              onClick={() => handleEdit(property)}
+              className="border border-primary-container px-4 py-2 text-xs uppercase tracking-[0.2em] text-primary-container transition hover:bg-primary-container hover:text-black"
+            >
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDelete(property._id)}
+              disabled={deletingId === property._id}
+              className="border border-red-500/40 px-4 py-2 text-xs uppercase tracking-[0.2em] text-red-300 transition hover:bg-red-500 hover:text-black disabled:opacity-70"
+            >
+              {deletingId === property._id ? 'Eliminando...' : 'Eliminar'}
+            </button>
           </div>
         </div>
       );
     }
 
+    // admin or other roles
     return (
       <div className="mt-4 space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -215,46 +214,152 @@ const PropertyCatalog = ({ mode = 'public' }) => {
         </div>
 
         <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() => handleEdit(property)}
-          className="border border-primary-container px-4 py-2 text-xs uppercase tracking-[0.2em] text-primary-container transition hover:bg-primary-container hover:text-black"
-        >
-          Editar
-        </button>
-        <button
-          type="button"
-          onClick={() => handleDelete(property._id)}
-          disabled={deletingId === property._id}
-          className="border border-red-500/40 px-4 py-2 text-xs uppercase tracking-[0.2em] text-red-300 transition hover:bg-red-500 hover:text-black disabled:opacity-70"
-        >
-          {deletingId === property._id ? 'Eliminando...' : 'Eliminar'}
-        </button>
+          <button
+            type="button"
+            onClick={() => handleEdit(property)}
+            className="border border-primary-container px-4 py-2 text-xs uppercase tracking-[0.2em] text-primary-container transition hover:bg-primary-container hover:text-black"
+          >
+            Editar
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDelete(property._id)}
+            disabled={deletingId === property._id}
+            className="border border-red-500/40 px-4 py-2 text-xs uppercase tracking-[0.2em] text-red-300 transition hover:bg-red-500 hover:text-black disabled:opacity-70"
+          >
+            {deletingId === property._id ? 'Eliminando...' : 'Eliminar'}
+          </button>
         </div>
       </div>
     );
   };
 
-  const renderCard = (property, allowManageActions = false) => (
-    <article key={property._id} className="border border-neutral-800 bg-black/80 p-5 transition hover:border-[#D4AF37]/50">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]">
-            {property.tipo} · {property.modalidad || 'Venta'}
-          </p>
-          <h3 className="mt-2 text-xl font-semibold text-white">{property.titulo}</h3>
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImages, setModalImages] = useState([]);
+  const [modalIndex, setModalIndex] = useState(0);
+  const [modalProperty, setModalProperty] = useState(null);
+  const [deletingMediaUrl, setDeletingMediaUrl] = useState('');
+  const [selectedMedia, setSelectedMedia] = useState([]);
+  const [deletingMode, setDeletingMode] = useState('');
+
+  const openGallery = (images = [], start = 0, property = null) => {
+    const unique = Array.from(new Set((images || []).filter(Boolean)));
+    let startIndex = 0;
+    if (images && images[start]) {
+      startIndex = unique.indexOf(images[start]);
+      if (startIndex === -1) startIndex = 0;
+    } else if (start >= 0 && start < unique.length) {
+      startIndex = start;
+    }
+
+    setModalImages(unique);
+    setModalIndex(startIndex);
+    setModalProperty(property);
+    setModalOpen(true);
+  };
+
+  const closeGallery = () => {
+    setModalOpen(false);
+    setModalProperty(null);
+    setModalImages([]);
+    setModalIndex(0);
+  };
+
+  const handleRemoveMedia = async (mediaUrl) => {
+    if (!modalProperty) return;
+    if (!window.confirm('¿Eliminar este archivo multimedia? Esta acción solo quitará la referencia.')) return;
+
+    setDeletingMediaUrl(mediaUrl);
+
+    try {
+      await api.delete(`/api/properties/${modalProperty._id}/media`, { data: { mediaUrl } });
+      setSuccessMessage('Multimedia eliminada correctamente.');
+      let next = modalImages.filter((u) => u !== mediaUrl);
+      next = Array.from(new Set(next));
+      setModalImages(next);
+      setModalIndex((i) => Math.min(i, Math.max(0, next.length - 1)));
+      if (next.length === 0) {
+        closeGallery();
+      }
+      await loadProperties();
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'No se pudo eliminar el archivo multimedia.');
+    } finally {
+      setDeletingMediaUrl('');
+    }
+  };
+
+  const toggleSelectMedia = (mediaUrl) => {
+    setSelectedMedia((current) => {
+      if (current.includes(mediaUrl)) return current.filter((u) => u !== mediaUrl);
+      return [...current, mediaUrl];
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!modalProperty) return;
+    if (!selectedMedia || selectedMedia.length === 0) return;
+
+    const message = `¿Eliminar ${selectedMedia.length} archivo(s)? Esta acción quitará las referencias.`;
+    if (!window.confirm(message)) return;
+
+    setDeletingMode('multi');
+
+    try {
+      await api.delete(`/api/properties/${modalProperty._id}/media`, { data: { mediaUrls: selectedMedia } });
+      setSuccessMessage('Multimedia(s) eliminada(s) correctamente.');
+      let next = modalImages.filter((u) => !selectedMedia.includes(u));
+      next = Array.from(new Set(next));
+      setModalImages(next);
+      setSelectedMedia([]);
+      setModalIndex((i) => Math.min(i, Math.max(0, next.length - 1)));
+      if (next.length === 0) closeGallery();
+      await loadProperties();
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'No se pudo eliminar los archivos multimedia.');
+    } finally {
+      setDeletingMode('');
+    }
+  };
+
+  const renderCard = (property, allowManageActions = false) => {
+    const media = [
+      ...(Array.isArray(property?.mediaUrls) ? property.mediaUrls : []),
+      ...(Array.isArray(property?.imagenes) ? property.imagenes : []),
+    ].filter(Boolean);
+
+    const hero = media[0] || null;
+
+    return (
+      <article key={property._id} className="border border-neutral-800 bg-black/80 transition hover:border-[#D4AF37]/50">
+        <div className="relative h-64 w-full overflow-hidden bg-neutral-900">
+          {hero ? (
+            <button type="button" onClick={() => openGallery(media, 0, property)} className="h-full w-full">
+              <img src={hero} alt={property.titulo || 'Imagen de propiedad'} className="h-full w-full object-cover transition-transform duration-300 hover:scale-105" />
+            </button>
+          ) : (
+            <div className="flex h-full items-center justify-center text-center text-sm text-[#C0C0C0]">
+              Sin imágenes disponibles
+            </div>
+          )}
+
+          <span className="absolute right-4 top-4 rounded-sm bg-black/60 border border-neutral-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-[#C0C0C0]">
+            {property.estado}
+          </span>
+
+          <div className="absolute left-4 bottom-4 bg-black/60 p-3 rounded-md">
+            <p className="text-sm text-[#D4AF37]">{property.tipo} · {property.modalidad || 'Venta'}</p>
+            <h3 className="mt-1 text-lg font-semibold text-white">{property.titulo}</h3>
+          </div>
         </div>
-        <span className="border border-neutral-700 px-3 py-1 text-xs uppercase tracking-[0.2em] text-[#C0C0C0]">
-          {property.estado}
-        </span>
-      </div>
 
-      <p className="mt-4 text-sm text-[#C0C0C0]">{property.descripcion}</p>
+        <div className="p-5">
+          <p className="mt-0 text-sm text-[#C0C0C0] line-clamp-3">{property.descripcion}</p>
 
-      <div className="mt-5 space-y-2 text-sm text-[#C0C0C0]">
-        <p><span className="text-[#D4AF37]">Precio:</span> ${Number(property.precio).toLocaleString('es-EC')}</p>
-        <p><span className="text-[#D4AF37]">Ubicación:</span> {property.ubicacion?.direccion || 'Sin ubicación'}</p>
-      </div>
+          <div className="mt-5 space-y-2 text-sm text-[#C0C0C0]">
+            <p><span className="text-[#D4AF37]">Precio:</span> ${Number(property.precio).toLocaleString('es-EC')}</p>
+            <p><span className="text-[#D4AF37]">Ubicación:</span> {property.ubicacion?.direccion || 'Sin ubicación'}</p>
+          </div>
 
       {property.caracteristicas && (
         property.caracteristicas.habitaciones !== undefined ||
@@ -282,10 +387,12 @@ const PropertyCatalog = ({ mode = 'public' }) => {
           ) : null}
         </div>
       ) : null}
+      </div>
 
       {renderCardActions(property, allowManageActions)}
     </article>
   );
+  };
 
   const allPropertiesSection = useMemo(() => {
     return allProperties.length > 0 ? allProperties.map((property) => renderCard(property, false)) : null;
@@ -342,6 +449,81 @@ const PropertyCatalog = ({ mode = 'public' }) => {
           {error}
         </p>
       ) : null}
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="relative max-w-4xl w-full">
+            <div className="absolute right-2 top-2 z-20 flex items-center gap-2">
+              {modalProperty && canManageProperty(modalProperty) ? (
+                <button
+                  onClick={() => handleRemoveMedia(modalImages[modalIndex])}
+                  disabled={deletingMediaUrl === modalImages[modalIndex]}
+                  className="rounded bg-red-600/80 px-3 py-2 text-sm text-white"
+                >
+                  {deletingMediaUrl === modalImages[modalIndex] ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              ) : null}
+              <button onClick={closeGallery} className="rounded bg-black/60 px-3 py-2 text-sm text-white">Cerrar</button>
+            </div>
+              <div className="h-[70vh] w-full flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setModalIndex((i) => (i - 1 + modalImages.length) % modalImages.length)}
+                className="absolute left-4 z-20 rounded-full bg-black/50 p-2 text-white"
+              >‹</button>
+
+              <img src={modalImages[modalIndex]} alt={`Imagen ${modalIndex + 1}`} className="max-h-[70vh] w-auto object-contain" />
+
+              <button
+                type="button"
+                onClick={() => setModalIndex((i) => (i + 1) % modalImages.length)}
+                className="absolute right-4 z-20 rounded-full bg-black/50 p-2 text-white"
+              >›</button>
+              </div>
+
+              {/* Thumbnails + selection */}
+              {modalImages && modalImages.length > 0 ? (
+                <div className="mt-4 grid grid-cols-4 gap-3 overflow-x-auto">
+                  {modalImages.map((img, idx) => (
+                    <div key={`${img}-${idx}`} className="relative flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setModalIndex(idx)}
+                        className="h-20 w-full overflow-hidden rounded bg-neutral-900"
+                      >
+                        <img src={img} alt={`Thumb ${idx + 1}`} className="h-full w-full object-cover" />
+                      </button>
+
+                      {modalProperty && canManageProperty(modalProperty) ? (
+                        <label className="absolute left-1 top-1 flex items-center gap-1 rounded bg-black/50 px-1 text-xs text-white">
+                          <input
+                            type="checkbox"
+                            checked={selectedMedia.includes(img)}
+                            onChange={() => toggleSelectMedia(img)}
+                          />
+                        </label>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Bulk delete action */}
+              {modalProperty && canManageProperty(modalProperty) ? (
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelected}
+                    disabled={!selectedMedia.length || deletingMode === 'multi'}
+                    className="rounded bg-red-600/80 px-3 py-2 text-sm text-white disabled:opacity-60"
+                  >
+                    {deletingMode === 'multi' ? 'Eliminando...' : `Eliminar seleccionados (${selectedMedia.length})`}
+                  </button>
+                </div>
+              ) : null}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="border border-neutral-800 bg-black/80 p-6 text-sm text-[#C0C0C0]">Cargando propiedades...</div>

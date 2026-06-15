@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const propertyRoutes = require('./routes/propertyRoutes');
 const { authMiddleware } = require('./middleware/authMiddleware');
+const { initFirebaseAdmin } = require('./firebaseAdmin');
 
 const app = express();
 
@@ -56,6 +57,8 @@ const PORT = process.env.PORT || 5000;
 const iniciarServidor = async () => {
     try {
         await conectarDB();
+
+        initFirebaseAdmin();
 
         app.listen(PORT, () => {
             console.log(`✅ Servidor encendido en http://localhost:${PORT}`);

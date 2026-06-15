@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Property = require('../models/Property');
+const { getBucket, initFirebaseAdmin } = require('../firebaseAdmin');
 const { getPropertyOwnerId } = require('../middleware/authorizeProperty');
 
 const normalizeText = (value) => String(value ?? '').trim();
@@ -123,6 +124,24 @@ const listProperties = async (req, res) => {
         });
     } catch (error) {
         return res.status(500).json({ message: 'No se pudieron obtener las propiedades.' });
+    }
+};
+
+const getPropertyById = async (req, res) => {
+    try {
+        const id = req.params.id;
+        if (!id) return res.status(400).json({ message: 'Property id is required.' });
+
+        const property = await Property.findById(id)
+            .populate('agente', 'name email role')
+            .populate('createdBy', 'name email role');
+
+        if (!property) return res.status(404).json({ message: 'Propiedad no encontrada.' });
+
+        return res.status(200).json({ message: 'Propiedad obtenida.', property });
+    } catch (err) {
+        console.error('Error getPropertyById', err);
+        return res.status(500).json({ message: 'Error obteniendo la propiedad.' });
     }
 };
 
@@ -353,21 +372,242 @@ const deleteProperty = async (req, res) => {
     try {
         const property = req.property;
 
+        const paths = Array.isArray(property.storagePaths) ? property.storagePaths.slice() : [];
+        const bucket = getBucket();
+        const deleteResults = [];
+
+        if (!bucket && paths.length > 0) {
+            for (const p of paths) {
+                deleteResults.push({ path: p, deleted: false, error: 'Firebase Admin not configured on server' });
+            }
+        }
+
+        if (bucket && paths.length > 0) {
+            for (const p of paths) {
+                try {
+                    await bucket.file(p).delete();
+                    deleteResults.push({ path: p, deleted: true });
+                } catch (err) {
+                    console.error('Failed to delete storage object during property delete', p, err.message || err);
+                    deleteResults.push({ path: p, deleted: false, error: err.message || String(err) });
+                }
+            }
+        }
+
         await Property.deleteOne({ _id: property._id });
 
         return res.status(200).json({
             message: 'Propiedad eliminada correctamente.',
-            propertyId: property._id
+            propertyId: property._id,
+            storage: deleteResults
         });
     } catch (error) {
         return res.status(500).json({ message: 'No se pudo eliminar la propiedad.' });
     }
 };
 
-module.exports = {
-    createProperty,
-    listProperties,
-    listMyProperties,
-    updateProperty,
-    deleteProperty,
+const addPropertyMedia = async (req, res) => {
+    try {
+        const property = req.property;
+        const mediaUrl = normalizeText(req.body?.mediaUrl);
+
+        if (!mediaUrl) {
+            return res.status(400).json({ message: 'La URL del archivo multimedia es obligatoria.' });
+        }
+
+        let parsedUrl;
+
+        try {
+            parsedUrl = new URL(mediaUrl);
+        } catch (error) {
+            return res.status(400).json({ message: 'La URL del archivo multimedia no es válida.' });
+        }
+
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            return res.status(400).json({ message: 'La URL del archivo multimedia no es válida.' });
+        }
+
+        const currentMedia = Array.isArray(property.mediaUrls) ? property.mediaUrls : [];
+        const currentImages = Array.isArray(property.imagenes) ? property.imagenes : [];
+        const currentPaths = Array.isArray(property.storagePaths) ? property.storagePaths : [];
+
+        const storagePathFromBody = normalizeText(req.body?.storagePath);
+        const storagePath = storagePathFromBody || extractStoragePathFromUrl(mediaUrl);
+
+        if (!currentMedia.includes(mediaUrl)) {
+            property.mediaUrls = [...currentMedia, mediaUrl];
+        }
+
+        if (!currentImages.includes(mediaUrl)) {
+            property.imagenes = [...currentImages, mediaUrl];
+        }
+
+        if (storagePath) {
+            if (!currentPaths.includes(storagePath)) {
+                property.storagePaths = [...currentPaths, storagePath];
+            }
+        }
+
+        if (!property.createdBy) {
+            property.set('createdBy', property.agente || req.user.id);
+        }
+
+        await property.save();
+
+        const updatedProperty = await Property.findById(property._id)
+            .populate('agente', 'name email role')
+            .populate('createdBy', 'name email role');
+
+        return res.status(200).json({
+            message: 'Multimedia agregada correctamente.',
+            property: updatedProperty
+        });
+    } catch (error) {
+        return res.status(500).json({ message: 'No se pudo guardar la multimedia de la propiedad.' });
+    }
 };
+
+const extractStoragePathFromUrl = (url) => {
+    if (!url) return null;
+
+    try {
+        const u = new URL(url);
+        if (u.hostname === 'firebasestorage.googleapis.com') {
+            const parts = u.pathname.split('/');
+            const oIndex = parts.indexOf('o');
+            if (oIndex !== -1 && parts[oIndex + 1]) {
+                return decodeURIComponent(parts.slice(oIndex + 1).join('/'));
+            }
+        }
+        if (u.hostname === 'storage.googleapis.com') {
+            const parts = u.pathname.split('/').filter(Boolean);
+            if (parts.length >= 2) {
+                return parts.slice(1).join('/');
+            }
+        }
+
+        const m = u.hostname.match(/^(.*?)\.storage\.googleapis\.com$/);
+        if (m) {
+            const parts = u.pathname.split('/').filter(Boolean);
+            return parts.join('/');
+        }
+
+        if (u.protocol === 'gs:') {
+            const parts = u.pathname.split('/').filter(Boolean);
+            return parts.join('/');
+        }
+
+        return null;
+    } catch (e) {
+        return null;
+    }
+};
+    const removePropertyMedia = async (req, res) => {
+        try {
+            const property = req.property;
+
+            let mediaUrls = [];
+
+            if (Array.isArray(req.body?.mediaUrls) && req.body.mediaUrls.length > 0) {
+                mediaUrls = req.body.mediaUrls.map((u) => normalizeText(u)).filter(Boolean);
+            } else if (req.body?.mediaUrl) {
+                mediaUrls = [normalizeText(req.body.mediaUrl)];
+            } else if (req.query?.mediaUrl) {
+                mediaUrls = [normalizeText(req.query.mediaUrl)];
+            }
+
+            if (!mediaUrls || mediaUrls.length === 0) {
+                return res.status(400).json({ message: 'La URL del archivo multimedia es obligatoria.' });
+            }
+
+          
+            mediaUrls = [...new Set(mediaUrls)];
+
+            const pathsToDelete = [];
+            const currentPaths = Array.isArray(property.storagePaths) ? property.storagePaths : [];
+
+            mediaUrls.forEach((u) => {
+                const idx = (property.mediaUrls || []).indexOf(u);
+                if (idx !== -1 && currentPaths[idx]) {
+                    pathsToDelete.push(currentPaths[idx]);
+                    return;
+                }
+
+                const p = extractStoragePathFromUrl(u);
+                if (p) {
+                    pathsToDelete.push(p);
+                    return;
+                }
+
+                try {
+                    const nameFromUrl = (() => {
+                        const parsed = new URL(u);
+                        const parts = parsed.pathname.split('/').filter(Boolean);
+                        return decodeURIComponent(parts[parts.length - 1] || '');
+                    })();
+
+                    const match = currentPaths.find((cp) => cp.endsWith(nameFromUrl));
+                    if (match) {
+                        pathsToDelete.push(match);
+                    }
+                } catch (e) {
+                    
+                }
+            });
+            if (Array.isArray(property.mediaUrls)) {
+                property.mediaUrls = property.mediaUrls.filter((u) => !mediaUrls.includes(u));
+            }
+
+            if (Array.isArray(property.imagenes)) {
+                property.imagenes = property.imagenes.filter((u) => !mediaUrls.includes(u));
+            }
+
+            if (Array.isArray(property.storagePaths) && pathsToDelete.length > 0) {
+                property.storagePaths = property.storagePaths.filter((p) => !pathsToDelete.includes(p));
+            }
+
+            const bucket = getBucket();
+            const deleteResults = [];
+
+            if (!bucket && pathsToDelete.length > 0) {
+                // Inform client that physical deletion could not be attempted due to missing server config
+                for (const p of pathsToDelete) {
+                    deleteResults.push({ path: p, deleted: false, error: 'Firebase Admin not configured on server' });
+                }
+            }
+
+            if (bucket && pathsToDelete.length > 0) {
+                for (const objectPath of pathsToDelete) {
+                    try {
+                        await bucket.file(objectPath).delete();
+                        deleteResults.push({ path: objectPath, deleted: true });
+                    } catch (err) {
+                        console.error('Failed to delete storage object', objectPath, err.message || err);
+                        deleteResults.push({ path: objectPath, deleted: false, error: err.message || String(err) });
+                    }
+                }
+            }
+
+            await property.save();
+
+            const updatedProperty = await Property.findById(property._id)
+                .populate('agente', 'name email role')
+                .populate('createdBy', 'name email role');
+
+            return res.status(200).json({ message: 'Multimedia eliminada correctamente.', property: updatedProperty, storage: deleteResults });
+        } catch (error) {
+            console.error('Error removing property media:', error);
+            return res.status(500).json({ message: 'No se pudo eliminar la multimedia de la propiedad.' });
+        }
+    };
+
+    module.exports = {
+        createProperty,
+        listProperties,
+        listMyProperties,
+        updateProperty,
+        deleteProperty,
+        addPropertyMedia,
+        removePropertyMedia,
+        getPropertyById,
+    };

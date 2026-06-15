@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import MultimediaUploader from '../components/MultimediaUploader';
 import RoleGuard from '../components/RoleGuard';
 import { useAuth } from '../context/AuthContext';
 import { emitPropertiesRefresh } from '../utils/propertyEvents';
@@ -25,11 +26,11 @@ const AgentNewProperty = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role } = useAuth();
+  const { user } = useAuth();
   const editingProperty = location.state?.property ?? null;
 
   const [formData, setFormData] = useState(initialForm);
-  const [imageFiles, setImageFiles] = useState([]);
-  const [existingImages, setExistingImages] = useState([]);
+  const [savedProperty, setSavedProperty] = useState(editingProperty);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -53,10 +54,77 @@ const AgentNewProperty = () => {
       areaMetros: editingProperty.caracteristicas?.areaMetros ?? '',
       parqueadero: Boolean(editingProperty.caracteristicas?.parqueadero),
     });
-    setExistingImages(Array.isArray(editingProperty.imagenes) ? editingProperty.imagenes : []);
+    setSavedProperty(editingProperty);
   }, [editingProperty]);
 
-  const imagePreviewUrls = useMemo(() => imageFiles.map((file) => URL.createObjectURL(file)), [imageFiles]);
+  const activeProperty = savedProperty ?? editingProperty;
+  const activePropertyId = activeProperty?._id;
+
+  const currentMedia = useMemo(() => {
+    const media = [
+      ...(Array.isArray(activeProperty?.mediaUrls) ? activeProperty.mediaUrls : []),
+      ...(Array.isArray(activeProperty?.imagenes) ? activeProperty.imagenes : []),
+    ];
+
+    return Array.from(new Set(media.filter(Boolean)));
+  }, [activeProperty]);
+
+  const [selectedMedia, setSelectedMedia] = useState([]);
+  const [deletingMediaUrl, setDeletingMediaUrl] = useState('');
+  const [deletingMode, setDeletingMode] = useState('');
+
+  const currentUserId = String(user?._id || user?.id || '');
+
+  const canManage = () => {
+    if (!savedProperty && !editingProperty) return true; // creating new
+    const ownerId = String(savedProperty?.createdBy?._id || savedProperty?.createdBy || savedProperty?.agente?._id || savedProperty?.agente || editingProperty?.createdBy?._id || editingProperty?.createdBy || editingProperty?.agente?._id || editingProperty?.agente || '');
+    return role === 'Admin' || (role === 'Agente' && ownerId === currentUserId);
+  };
+
+  const toggleSelectMedia = (mediaUrl) => {
+    setSelectedMedia((current) => {
+      if (current.includes(mediaUrl)) return current.filter((u) => u !== mediaUrl);
+      return [...current, mediaUrl];
+    });
+  };
+
+  const handleRemoveMediaSingle = async (mediaUrl) => {
+    if (!activePropertyId) return;
+    if (!window.confirm('¿Eliminar este archivo multimedia? Esta acción solo quitará la referencia.')) return;
+
+    setDeletingMediaUrl(mediaUrl);
+
+    try {
+      const res = await api.delete(`/api/properties/${activePropertyId}/media`, { data: { mediaUrl } });
+      setSavedProperty(res.data?.property ?? null);
+      setSuccessMessage(res.data?.message || 'Multimedia eliminada.');
+      emitPropertiesRefresh();
+    } catch (err) {
+      setError(err.response?.data?.message || 'No se pudo eliminar el archivo.');
+    } finally {
+      setDeletingMediaUrl('');
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!activePropertyId) return;
+    if (!selectedMedia.length) return;
+    if (!window.confirm(`¿Eliminar ${selectedMedia.length} archivo(s)? Esta acción quitará las referencias.`)) return;
+
+    setDeletingMode('multi');
+
+    try {
+      const res = await api.delete(`/api/properties/${activePropertyId}/media`, { data: { mediaUrls: selectedMedia } });
+      setSavedProperty(res.data?.property ?? null);
+      setSelectedMedia([]);
+      setSuccessMessage(res.data?.message || 'Multimedia(s) eliminada(s).');
+      emitPropertiesRefresh();
+    } catch (err) {
+      setError(err.response?.data?.message || 'No se pudo eliminar los archivos.');
+    } finally {
+      setDeletingMode('');
+    }
+  };
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -81,22 +149,20 @@ const AgentNewProperty = () => {
     return numericValue;
   };
 
-  const handleImageChange = (event) => {
-    const selectedFiles = Array.from(event.target.files || []);
-    setImageFiles(selectedFiles);
+  const appendUploadedMedia = (mediaUrl) => {
+    setSavedProperty((currentProperty) => {
+      const currentMediaUrls = Array.isArray(currentProperty?.mediaUrls) ? currentProperty.mediaUrls : [];
+      const currentImages = Array.isArray(currentProperty?.imagenes) ? currentProperty.imagenes : [];
+
+      return {
+        ...(currentProperty || activeProperty || editingProperty || {}),
+        mediaUrls: Array.from(new Set([...currentMediaUrls, mediaUrl])),
+        imagenes: Array.from(new Set([...currentImages, mediaUrl])),
+      };
+    });
+
+    emitPropertiesRefresh();
   };
-
-  const handleRemoveExistingImage = (imageToRemove) => {
-    setExistingImages((currentImages) => currentImages.filter((image) => image !== imageToRemove));
-  };
-
-  const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('No se pudo leer una de las imágenes.'));
-    reader.readAsDataURL(file);
-  });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -123,9 +189,6 @@ const AgentNewProperty = () => {
     setLoading(true);
 
     try {
-      const encodedImages = await Promise.all(imageFiles.map((file) => fileToDataUrl(file)));
-      const nextImages = [...existingImages, ...encodedImages];
-
       const payload = {
         titulo: formData.titulo.trim(),
         precio: numericPrice,
@@ -133,7 +196,6 @@ const AgentNewProperty = () => {
         tipo: formData.tipo,
         modalidad: formData.modalidad,
         descripcion: formData.descripcion.trim(),
-        imagenes: nextImages,
         caracteristicas: {
           ...(formData.habitaciones !== '' ? { habitaciones: parseOptionalNumber(formData.habitaciones, 'habitaciones') } : {}),
           ...(formData.banos !== '' ? { banos: parseOptionalNumber(formData.banos, 'baños') } : {}),
@@ -146,19 +208,14 @@ const AgentNewProperty = () => {
         ? await api.put(`/api/properties/${editingProperty._id}`, payload)
         : await api.post('/api/properties', payload);
 
-      setSuccessMessage(response.data?.message || 'Propiedad registrada correctamente.');
-      setFormData(initialForm);
-      setImageFiles([]);
-      setExistingImages([]);
-      emitPropertiesRefresh();
+      const nextProperty = response.data?.property ?? null;
 
-      navigate(role === 'Admin' ? '/admin/propiedades' : '/agente/inventario', {
-        replace: true,
-        state: {
-          message: response.data?.message || 'Propiedad registrada correctamente.',
-          refreshToken: Date.now(),
-        },
-      });
+      if (nextProperty) {
+        setSavedProperty(nextProperty);
+      }
+
+      setSuccessMessage(response.data?.message || 'Propiedad registrada correctamente.');
+      emitPropertiesRefresh();
     } catch (requestError) {
       setError(requestError.response?.data?.message || requestError.message || 'No se pudo registrar la propiedad.');
     } finally {
@@ -345,42 +402,78 @@ const AgentNewProperty = () => {
             </label>
           </div>
 
-          <div className="space-y-2 md:col-span-2">
-            <label htmlFor="imagenes" className="block text-xs uppercase tracking-[0.25em] text-[#D4AF37]">
-              Imágenes
-            </label>
-            <input
-              id="imagenes"
-              name="imagenes"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-              className="block w-full text-sm text-[#C0C0C0] file:mr-4 file:h-12 file:border-0 file:bg-[#D4AF37] file:px-4 file:text-sm file:font-semibold file:uppercase file:tracking-[0.2em] file:text-black hover:file:brightness-110"
-            />
+          <div className="md:col-span-2 space-y-4 border border-neutral-800 bg-[#111111] p-5">
+            <div className="space-y-1">
+              <label className="block text-xs uppercase tracking-[0.25em] text-[#D4AF37]">
+                Multimedia de la propiedad
+              </label>
+              <p className="text-sm text-[#C0C0C0]">
+                Guarda la propiedad primero para habilitar la subida de imágenes y videos a Firebase.
+              </p>
+            </div>
 
-            {existingImages.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-3">
-                {existingImages.map((image) => (
-                  <div key={image} className="relative">
-                    <img src={image} alt="Imagen actual" className="h-28 w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveExistingImage(image)}
-                      className="absolute right-2 top-2 border border-red-500/40 bg-black/80 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-red-300"
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                ))}
+            {activePropertyId ? (
+              <MultimediaUploader propertyId={activePropertyId} onUploaded={appendUploadedMedia} />
+            ) : (
+              <div className="border border-dashed border-neutral-800 p-4 text-sm text-[#C0C0C0]">
+                Aún no hay una propiedad guardada para asociar archivos multimedia.
               </div>
-            ) : null}
+            )}
 
-            {imagePreviewUrls.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-3">
-                {imagePreviewUrls.map((previewUrl) => (
-                  <img key={previewUrl} src={previewUrl} alt="Vista previa" className="h-28 w-full object-cover" />
-                ))}
+            {currentMedia.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]">Multimedia guardada</p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {currentMedia.map((mediaUrl) => {
+                          const isVideo = /\.(mp4|webm|ogg)(\?.*)?$/i.test(mediaUrl);
+
+                          return (
+                            <div key={mediaUrl} className="relative">
+                              {isVideo ? (
+                                <video src={mediaUrl} controls className="h-28 w-full object-cover" />
+                              ) : (
+                                <img src={mediaUrl} alt="Multimedia actual" className="h-28 w-full object-cover" />
+                              )}
+
+                              {canManage() ? (
+                                <div className="absolute left-1 top-1 flex items-center gap-1">
+                                  <label className="flex items-center gap-1 rounded bg-black/50 px-1 text-xs text-white">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedMedia.includes(mediaUrl)}
+                                      onChange={() => toggleSelectMedia(mediaUrl)}
+                                      className="h-4 w-4 accent-[#D4AF37]"
+                                    />
+                                  </label>
+                                </div>
+                              ) : null}
+
+                              {canManage() ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMediaSingle(mediaUrl)}
+                                  disabled={deletingMediaUrl === mediaUrl}
+                                  className="absolute right-1 top-1 rounded bg-red-600/80 px-2 py-1 text-xs text-white"
+                                >
+                                  {deletingMediaUrl === mediaUrl ? 'Eliminando...' : 'Eliminar'}
+                                </button>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                </div>
+                      {canManage() && (
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleDeleteSelected}
+                            disabled={!selectedMedia.length || deletingMode === 'multi'}
+                            className="mt-2 rounded bg-red-600/80 px-4 py-2 text-sm text-white disabled:opacity-60"
+                          >
+                            {deletingMode === 'multi' ? 'Eliminando...' : `Eliminar seleccionados (${selectedMedia.length})`}
+                          </button>
+                        </div>
+                      )}
               </div>
             ) : null}
           </div>
