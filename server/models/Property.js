@@ -8,12 +8,17 @@ const propertySchema = new mongoose.Schema({
         required: true, 
         enum: ['Casa', 'Departamento', 'Terreno', 'Oficina'] 
     },
+    modalidad: {
+        type: String,
+        required: true,
+        enum: ['Venta', 'Alquiler']
+    },
     estado: { 
         type: String, 
         default: 'Disponible', 
-        enum: ['Disponible', 'Vendida', 'Rentada'] 
+        enum: ['Disponible', 'Vendida', 'Alquilada'] 
     },
-    precio: { type: Number, required: true },
+    precio: { type: Number, required: true, min: 0 },
     ubicacion: {
         direccion: { type: String, required: true },
         ciudad: { type: String, default: 'Quito' },
@@ -26,10 +31,16 @@ const propertySchema = new mongoose.Schema({
         parqueadero: { type: Boolean, default: false }
     },
     imagenes: [{ type: String }], 
-    agente: { 
+    mediaUrls: [{ type: String }],
+    storagePaths: [{ type: String }],
+    createdBy: {
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User', 
         required: true 
+    },
+    agente: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, { timestamps: true });
 

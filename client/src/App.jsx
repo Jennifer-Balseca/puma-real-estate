@@ -7,7 +7,11 @@ import PublicLayout from './layouts/PublicLayout';
 import { useAuth } from './context/AuthContext';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAgentes from './pages/AdminAgentes';
+import AdminProperties from './pages/AdminProperties';
 import AgentDashboard from './pages/AgentDashboard';
+import AgentInventory from './pages/AgentInventory';
+import AgentNewProperty from './pages/AgentNewProperty';
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 
 const App = () => {
@@ -31,23 +35,14 @@ const App = () => {
       />
 
       <Route element={<PublicLayout />}>
-        <Route
-          path="/inicio"
-          element={
-            <PlaceholderPage
-              subtitle="Inicio"
-              title="Bienvenido a Puma Real Estate"
-              description="Portal público de la inmobiliaria, pensado para mostrar propiedades, servicios y acceso al panel de gestión."
-            />
-          }
-        />
+        <Route path="/inicio" element={<HomePage />} />
         <Route
           path="/nosotros"
           element={
             <PlaceholderPage
               subtitle="Nosotros"
               title="Historia, valores y visión"
-              description="Sección informativa para presentar la marca, el enfoque premium y la propuesta de valor de Puma Real Estate."
+              
             />
           }
         />
@@ -57,7 +52,7 @@ const App = () => {
             <PlaceholderPage
               subtitle="Contacto"
               title="Comunicación directa"
-              description="Zona para los datos de contacto, botones rápidos y futuros canales de atención al cliente."
+              
             />
           }
         />
@@ -68,32 +63,15 @@ const App = () => {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/agentes" element={<AdminAgentes />} />
-          <Route
-            path="/admin/propiedades"
-            element={
-              <PlaceholderPage
-                subtitle="Propiedades"
-                title="Inventario administrativo"
-                description="Vista base para supervisar el inventario general y su estado dentro del sistema."
-              />
-            }
-          />
+          <Route path="/admin/propiedades" element={<AdminProperties />} />
+          <Route path="/admin/nueva-propiedad" element={<AgentNewProperty />} />
         </Route>
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['Agente']} />}>
         <Route path="/agente" element={<AgentDashboard />} />
         <Route element={<AgentLayout />}>
-          <Route
-            path="/agente/inventario"
-            element={
-              <PlaceholderPage
-                subtitle="Inventario"
-                title="Inventario asignado"
-                description="Sección base para listar, crear y editar las propiedades del agente."
-              />
-            }
-          />
+          <Route path="/agente/inventario" element={<AgentInventory />} />
           <Route
             path="/agente/solicitudes"
             element={
@@ -114,16 +92,7 @@ const App = () => {
               />
             }
           />
-          <Route
-            path="/agente/nueva-propiedad"
-            element={
-              <PlaceholderPage
-                subtitle="Registrar Propiedad"
-                title="Alta de propiedades"
-                description="Formulario base para dar de alta nuevas propiedades asignadas al agente."
-              />
-            }
-          />
+          <Route path="/agente/nueva-propiedad" element={<AgentNewProperty />} />
         </Route>
       </Route>
 

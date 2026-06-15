@@ -79,6 +79,7 @@ const AdminDashboard = () => {
             </button>
             <button
               type="button"
+              onClick={() => navigate('/admin/nueva-propiedad')}
               className="flex items-center justify-center gap-2 border border-neutral-700 bg-[#1A1A1A] px-5 py-3 font-subtitle text-subtitle uppercase tracking-widest text-on-surface transition-all hover:border-primary-container hover:text-primary-container"
             >
               <span className="material-symbols-outlined text-base">add_business</span>

@@ -6,6 +6,7 @@ const adminLinks = [
   { label: 'Dashboard', to: '/admin' },
   { label: 'Agentes', to: '/admin/agentes' },
   { label: 'Propiedades', to: '/admin/propiedades' },
+  { label: 'Nueva Propiedad', to: '/admin/nueva-propiedad' },
 ];
 
 const AdminLayout = ({ children }) => {
