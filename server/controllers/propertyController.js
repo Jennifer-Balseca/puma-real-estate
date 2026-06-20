@@ -31,47 +31,49 @@ const parseOptionalBoolean = (value) => {
     return undefined;
 };
 
+// Busca la función buildCharacteristics y reemplázala por esta:
 const buildCharacteristics = (caracteristicas = {}) => {
     const nextCharacteristics = {};
 
     if (caracteristicas.habitaciones !== undefined && caracteristicas.habitaciones !== '') {
         const habitaciones = parseOptionalNumber(caracteristicas.habitaciones);
-
         if (!Number.isFinite(habitaciones)) {
             return { error: 'Las habitaciones deben ser un número válido.' };
         }
-
         nextCharacteristics.habitaciones = habitaciones;
     }
 
     if (caracteristicas.banos !== undefined && caracteristicas.banos !== '') {
         const banos = parseOptionalNumber(caracteristicas.banos);
-
         if (!Number.isFinite(banos)) {
             return { error: 'Los baños deben ser un número válido.' };
         }
-
         nextCharacteristics.banos = banos;
     }
 
     if (caracteristicas.areaMetros !== undefined && caracteristicas.areaMetros !== '') {
         const areaMetros = parseOptionalNumber(caracteristicas.areaMetros);
-
         if (!Number.isFinite(areaMetros)) {
             return { error: 'El área debe ser un número válido.' };
         }
-
         nextCharacteristics.areaMetros = areaMetros;
     }
 
     if (caracteristicas.parqueadero !== undefined) {
         const parqueadero = parseOptionalBoolean(caracteristicas.parqueadero);
-
         if (parqueadero === undefined) {
             return { error: 'El parqueadero debe ser verdadero o falso.' };
         }
-
         nextCharacteristics.parqueadero = parqueadero;
+    }
+
+    // --- Procesar Amenidades ---
+    if (caracteristicas.amenidades !== undefined) {
+        if (Array.isArray(caracteristicas.amenidades)) {
+            nextCharacteristics.amenidades = caracteristicas.amenidades.map(a => normalizeText(a));
+        } else {
+            return { error: 'Las amenidades deben ser una lista válida.' };
+        }
     }
 
     return { value: nextCharacteristics };
@@ -151,12 +153,21 @@ const createProperty = async (req, res) => {
             return res.status(403).json({ message: 'No tienes permisos para registrar propiedades.' });
         }
 
-        const { titulo, precio, ubicacion, tipo, modalidad, descripcion, imagenes, caracteristicas } = req.body;
+        const { titulo, precio, ubicacion, ciudad, tipo, modalidad, descripcion, imagenes, caracteristicas } = req.body;
         const normalizedTitle = normalizeText(titulo);
         const normalizedType = normalizeText(tipo);
         const normalizedModality = normalizeText(modalidad);
-        const normalizedDescription = normalizeText(descripcion);
-        const normalizedLocation = normalizeText(ubicacion);
+        const normalizedDescription = normalizeText(descripcion)
+     
+        let normalizedLocation = '';
+        let normalizedCity = normalizeText(ciudad) || '';
+
+        if (typeof ubicacion === 'string') {
+            normalizedLocation = normalizeText(ubicacion);
+        } else if (ubicacion && typeof ubicacion === 'object') {
+            normalizedLocation = normalizeText(ubicacion.direccion || ubicacion.address || '');
+            if (!normalizedCity) normalizedCity = normalizeText(ubicacion.ciudad || ubicacion.city || '');
+        }
         const numericPrice = parsePrice(precio);
         const normalizedImages = Array.isArray(imagenes)
             ? imagenes.map((image) => normalizeText(image)).filter(Boolean)
@@ -167,7 +178,7 @@ const createProperty = async (req, res) => {
             return res.status(400).json({ message: parsedCharacteristics.error });
         }
 
-        if (!normalizedTitle || !normalizedLocation || !normalizedType || !normalizedDescription || !normalizedModality) {
+        if (!normalizedTitle || !normalizedLocation || !normalizedType || !normalizedDescription || !normalizedModality || !normalizedCity) {
             return res.status(400).json({ message: 'Título, precio, ubicación, tipo, modalidad y descripción son obligatorios.' });
         }
 
@@ -194,7 +205,7 @@ const createProperty = async (req, res) => {
             precio: numericPrice,
             ubicacion: {
                 direccion: normalizedLocation,
-                ciudad: 'Quito'
+                ciudad: normalizedCity || 'Quito'
             },
             tipo: normalizedType,
             modalidad: normalizedModality,
@@ -271,7 +282,15 @@ const updateProperty = async (req, res) => {
         }
 
         if (ubicacion !== undefined) {
-            const nextLocation = normalizeText(ubicacion);
+         
+            let nextLocation = '';
+            let nextCity = '';
+            if (typeof ubicacion === 'string') {
+                nextLocation = normalizeText(ubicacion);
+            } else if (ubicacion && typeof ubicacion === 'object') {
+                nextLocation = normalizeText(ubicacion.direccion || ubicacion.address || '');
+                nextCity = normalizeText(ubicacion.ciudad || ubicacion.city || '');
+            }
 
             if (!nextLocation) {
                 return res.status(400).json({ message: 'La ubicación no puede estar vacía.' });
@@ -281,7 +300,8 @@ const updateProperty = async (req, res) => {
 
             property.ubicacion = {
                 ...currentLocation,
-                direccion: nextLocation
+                direccion: nextLocation,
+                ciudad: nextCity || currentLocation.ciudad || 'Quito'
             };
         }
 

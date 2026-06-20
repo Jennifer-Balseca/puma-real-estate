@@ -9,6 +9,10 @@ const propertyRoutes = require('./routes/propertyRoutes');
 const { authMiddleware } = require('./middleware/authMiddleware');
 const { initFirebaseAdmin } = require('./firebaseAdmin');
 
+const http = require('http');
+const { Server } = require('socket.io');
+const visitRoutes = require('./routes/visitRequests');
+
 const app = express();
 
 
@@ -26,6 +30,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', authMiddleware, adminRoutes);
 app.use('/api/properties', propertyRoutes);
+app.use('/api/visits', visitRoutes);
 
 app.get('/health', (req, res) => {
     const isConnected = mongoose.connection.readyState === 1;
@@ -41,7 +46,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.use((req, res) => {
+app.use((req, res, next) => {
     res.status(404).json({ message: 'Ruta no encontrada' });
 });
 
@@ -58,11 +63,22 @@ const iniciarServidor = async () => {
     try {
         await conectarDB();
 
-        initFirebaseAdmin();
+            initFirebaseAdmin();
 
-        app.listen(PORT, () => {
-            console.log(`✅ Servidor encendido en http://localhost:${PORT}`);
-        });
+        
+            const server = http.createServer(app);
+            const io = new Server(server, { cors: { origin: ['http://localhost:5173', 'http://127.0.0.1:5173'] } });
+            app.set('io', io);
+
+            io.on('connection', (socket) => {
+                console.log('Socket conectado:', socket.id);
+                socket.on('disconnect', () => {
+                });
+            });
+
+            server.listen(PORT, () => {
+                console.log(`✅ Servidor encendido en http://localhost:${PORT}`);
+            });
     } catch (error) {
         console.error(`Error al iniciar el backend: ${error.message}`);
         process.exit(1);

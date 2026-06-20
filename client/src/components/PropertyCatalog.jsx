@@ -335,7 +335,7 @@ const PropertyCatalog = ({ mode = 'public' }) => {
         <div className="relative h-64 w-full overflow-hidden bg-neutral-900">
           {hero ? (
             <button type="button" onClick={() => openGallery(media, 0, property)} className="h-full w-full">
-              <img src={hero} alt={property.titulo || 'Imagen de propiedad'} className="h-full w-full object-cover transition-transform duration-300 hover:scale-105" />
+              <img loading="lazy" src={hero} alt={property.titulo || 'Imagen de propiedad'} className="h-full w-full object-cover transition-transform duration-300 hover:scale-105" />
             </button>
           ) : (
             <div className="flex h-full items-center justify-center text-center text-sm text-[#C0C0C0]">
@@ -472,7 +472,7 @@ const PropertyCatalog = ({ mode = 'public' }) => {
                 className="absolute left-4 z-20 rounded-full bg-black/50 p-2 text-white"
               >‹</button>
 
-              <img src={modalImages[modalIndex]} alt={`Imagen ${modalIndex + 1}`} className="max-h-[70vh] w-auto object-contain" />
+              <img loading="lazy" src={modalImages[modalIndex]} alt={`Imagen ${modalIndex + 1}`} className="max-h-[70vh] w-auto object-contain" />
 
               <button
                 type="button"
@@ -491,7 +491,7 @@ const PropertyCatalog = ({ mode = 'public' }) => {
                         onClick={() => setModalIndex(idx)}
                         className="h-20 w-full overflow-hidden rounded bg-neutral-900"
                       >
-                        <img src={img} alt={`Thumb ${idx + 1}`} className="h-full w-full object-cover" />
+                        <img loading="lazy" src={img} alt={`Thumb ${idx + 1}`} className="h-full w-full object-cover" />
                       </button>
 
                       {modalProperty && canManageProperty(modalProperty) ? (

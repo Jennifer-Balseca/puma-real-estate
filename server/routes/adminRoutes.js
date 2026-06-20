@@ -1,5 +1,5 @@
 const express = require('express');
-const { listUsers, registerAgent, updateAgent, deactivateUser } = require('../controllers/adminController');
+const { listUsers, registerAgent, updateAgent, deactivateUser, getActiveAgents } = require('../controllers/adminController');
 const { requireAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(requireAdmin);
 
 router.get('/users', listUsers);
+router.get('/agents', getActiveAgents);
 router.post('/users/register', registerAgent);
 router.post('/users', registerAgent);
 router.patch('/users/:id', updateAgent);

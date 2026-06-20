@@ -176,9 +176,19 @@ const deactivateUser = async (req, res) => {
     }
 };
 
+const getActiveAgents = async (req, res) => {
+  try {
+      const agents = await User.find({ role: 'Agente', status: 'Activo' }).select('name email');
+      return res.status(200).json(agents);
+  } catch (error) {
+      return res.status(500).json({ message: 'Error al obtener agentes.' });
+  }
+};
+
 module.exports = {
     listUsers,
     registerAgent,
     updateAgent,
-    deactivateUser
+    deactivateUser,
+    getActiveAgents
 };

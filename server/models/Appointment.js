@@ -15,7 +15,7 @@ const appointmentSchema = new mongoose.Schema({
     estado: { 
         type: String, 
         default: 'Pendiente', 
-        enum: ['Pendiente', 'Confirmada', 'Cancelada', 'Completada'] 
+        enum: ['Pendiente', 'Confirmada', 'Completada'] 
     },
     agenteResponsable: { 
         type: mongoose.Schema.Types.ObjectId, 
