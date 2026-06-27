@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
-const publicLinks = [
+  const publicLinks = [
   { label: 'Inicio', to: '/inicio' },
+  { label: 'Propiedades', to: '/propiedades' },
   { label: 'Nosotros', to: '/nosotros' },
-  { label: 'Contacto', to: '/contacto' },
-  { label: 'Login', to: '/login' },
 ];
 
 const PublicLayout = ({ children }) => {
@@ -25,8 +24,9 @@ const PublicLayout = ({ children }) => {
             className="rounded-none border border-neutral-800 px-3 py-2 text-primary-container md:hidden"
             onClick={() => setIsMenuOpen((currentValue) => !currentValue)}
             aria-label="Abrir menu"
+            aria-expanded={isMenuOpen}
           >
-            <span className="material-symbols-outlined">menu</span>
+            <span className="material-symbols-outlined">{isMenuOpen ? 'close' : 'menu'}</span>
           </button>
 
           <nav className="hidden items-center gap-8 font-h1 text-xs uppercase tracking-[0.2em] text-neutral-400 md:flex">
@@ -42,10 +42,25 @@ const PublicLayout = ({ children }) => {
               </NavLink>
             ))}
           </nav>
+
+          <div className="hidden md:flex items-center gap-4">
+            <a
+              href="/contacto"
+              className="bg-primary-container text-on-primary-container px-6 py-2 text-xs font-h1 tracking-widest uppercase"
+            >
+              Contactar
+            </a>
+            <Link
+              to="/login"
+              className="border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.2em] text-on-surface-variant"
+            >
+              Iniciar Sesión
+            </Link>
+          </div>
         </div>
 
         {isMenuOpen ? (
-          <nav className="border-t border-neutral-800 bg-black px-6 py-4 md:hidden">
+          <nav className="border-t border-neutral-800 bg-black px-4 py-4 md:hidden">
             <div className="flex flex-col gap-3">
               {publicLinks.map((link) => (
                 <NavLink
@@ -53,7 +68,7 @@ const PublicLayout = ({ children }) => {
                   to={link.to}
                   onClick={() => setIsMenuOpen(false)}
                   className={({ isActive }) =>
-                    `rounded-none border border-neutral-800 px-4 py-3 font-h1 text-xs uppercase tracking-[0.2em] transition-colors ${
+                    `rounded-none border border-neutral-800 px-4 py-3 font-h1 text-sm uppercase tracking-[0.12em] transition-colors ${
                       isActive ? 'border-primary-container text-primary-container' : 'text-on-surface-variant'
                     }`
                   }
@@ -61,6 +76,24 @@ const PublicLayout = ({ children }) => {
                   {link.label}
                 </NavLink>
               ))}
+
+              <div className="mt-2 flex flex-col gap-3 border-t border-neutral-800 pt-4">
+                <a
+                  href="/contacto"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="w-full text-center bg-primary-container text-on-primary-container px-4 py-3 text-sm font-h1 uppercase tracking-widest"
+                >
+                  Contactar
+                </a>
+
+                <Link
+                  to="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="w-full text-center border border-neutral-700 px-4 py-3 text-sm uppercase tracking-[0.12em] text-on-surface-variant"
+                >
+                  Iniciar Sesión
+                </Link>
+              </div>
             </div>
           </nav>
         ) : null}
@@ -72,20 +105,10 @@ const PublicLayout = ({ children }) => {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row md:gap-8">
           <div className="text-lg font-semibold text-primary-container">Puma Real Estate.</div>
 
-          <div className="hidden flex-wrap justify-center gap-8 font-h1 text-xs tracking-wider md:flex">
-            <a href="#" className="text-zinc-500 transition-colors hover:text-amber-200">
-              Privacidad
-            </a>
-            <a href="#" className="text-zinc-500 transition-colors hover:text-amber-200">
-              Terminos
-            </a>
-            <a href="#" className="text-zinc-500 transition-colors hover:text-amber-200">
-              Inversiones
-            </a>
-          </div>
+    
 
           <div className="font-caption text-[10px] uppercase tracking-[0.2em] text-zinc-600 md:text-xs md:tracking-wider md:text-zinc-500">
-            © 2024 PUMA REAL ESTATE · LEGACY OF EXCELLENCE
+            © 2024 PUMA REAL ESTATE · LEGADO DE EXCELENCIA · TODOS LOS DERECHOS RESERVADOS
           </div>
         </div>
       </footer>

@@ -1,18 +1,24 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import PlaceholderPage from './components/PlaceholderPage';
+import Nosotros from './pages/Nosotros';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import AgentLayout from './layouts/AgentLayout';
 import PublicLayout from './layouts/PublicLayout';
 import { useAuth } from './context/AuthContext';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminVisitRequests from './pages/AdminVisitRequests';
 import AdminAgentes from './pages/AdminAgentes';
 import AdminProperties from './pages/AdminProperties';
 import AgentDashboard from './pages/AgentDashboard';
 import AgentInventory from './pages/AgentInventory';
+import AgentRequests from './pages/AgentRequests';
+import AgentAgenda from './pages/AgentAgenda';
 import AgentNewProperty from './pages/AgentNewProperty';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import Propiedades from './pages/Propiedades';
+import PropertyDetail from './pages/PropertyDetail';
 
 const App = () => {
   const { initializing, isAuthenticated, role } = useAuth();
@@ -36,16 +42,9 @@ const App = () => {
 
       <Route element={<PublicLayout />}>
         <Route path="/inicio" element={<HomePage />} />
-        <Route
-          path="/nosotros"
-          element={
-            <PlaceholderPage
-              subtitle="Nosotros"
-              title="Historia, valores y visión"
-              
-            />
-          }
-        />
+        <Route path="/propiedades" element={<Propiedades />} />
+        <Route path="/propiedades/:id" element={<PropertyDetail />} />
+        <Route path="/nosotros" element={<Nosotros />} />
         <Route
           path="/contacto"
           element={
@@ -62,6 +61,7 @@ const App = () => {
       <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/visitas" element={<AdminVisitRequests />} />
           <Route path="/admin/agentes" element={<AdminAgentes />} />
           <Route path="/admin/propiedades" element={<AdminProperties />} />
           <Route path="/admin/nueva-propiedad" element={<AgentNewProperty />} />
@@ -72,26 +72,8 @@ const App = () => {
         <Route path="/agente" element={<AgentDashboard />} />
         <Route element={<AgentLayout />}>
           <Route path="/agente/inventario" element={<AgentInventory />} />
-          <Route
-            path="/agente/solicitudes"
-            element={
-              <PlaceholderPage
-                subtitle="Solicitudes Disponibles"
-                title="Cola de solicitudes"
-                description="Vista base para revisar y priorizar las solicitudes que esperan atención."
-              />
-            }
-          />
-          <Route
-            path="/agente/agenda"
-            element={
-              <PlaceholderPage
-                subtitle="Mi Agenda"
-                title="Agenda operativa"
-                description="Vista base para controlar visitas programadas, pendientes y completadas."
-              />
-            }
-          />
+          <Route path="/agente/solicitudes" element={<AgentRequests />} />
+          <Route path="/agente/agenda" element={<AgentAgenda />} />
           <Route path="/agente/nueva-propiedad" element={<AgentNewProperty />} />
         </Route>
       </Route>

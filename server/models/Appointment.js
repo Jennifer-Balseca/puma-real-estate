@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const appointmentSchema = new mongoose.Schema({
+    visitRequestId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'VisitRequest',
+        default: null
+    },
     propiedad: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Property', 
@@ -15,7 +20,7 @@ const appointmentSchema = new mongoose.Schema({
     estado: { 
         type: String, 
         default: 'Pendiente', 
-        enum: ['Pendiente', 'Confirmada', 'Cancelada', 'Completada'] 
+        enum: ['Pendiente', 'Confirmada', 'Completada', 'Cancelada'] 
     },
     agenteResponsable: { 
         type: mongoose.Schema.Types.ObjectId, 

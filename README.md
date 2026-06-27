@@ -1,528 +1,487 @@
-# Puma Real Estate - Sitema de Gestión Inmobiliaria
-Sistema web de gestión inmobiliaria desarrollado con stack MERN para centralizar inventario, usuarios y solicitudes de visitas. Su objetivo principal es reemplazar procesos manuales por una plataforma web que organice la información en tiempo real y mejore la operación de la empresa.
+# Puma Real Estate
+
+Puma Real Estate es un sistema web de gestión inmobiliaria desarrollado con MERN para centralizar inventario, usuarios, propiedades y solicitudes de visita. El objetivo del proyecto es reemplazar procesos manuales por una plataforma web que organice la información en tiempo real y facilite el trabajo de administración, ventas y seguimiento de visitas.
 
 ---
 
-## 🧑‍🎓 Datos del Estudiante
-- **Autor:** Jennifer Balseca
-- **Carrera:** Tecnología Superior en Desarrollo de Software
-- **Docente:** Jonathan Quespaz
-- **Período:** 1er Período Ordinario 2026 TEC
+## Descripción general
+
+La aplicación permite consultar un catálogo público de propiedades, ver el detalle de cada inmueble, enviar solicitudes de visita y administrar la información desde paneles privados para administradores y agentes. El frontend consume una API REST construida en Node.js y Express, mientras que la persistencia se realiza en MongoDB Atlas con Mongoose. El sistema también integra Firebase Storage para multimedia y Socket.IO para eventos en tiempo real.
 
 ---
 
-## 📌 Descripción General del Proyecto
-Puma Real Estate es una plataforma web para administrar propiedades, usuarios y solicitudes de visitas dentro de una inmobiliaria. El proyecto resuelve el problema de la información dispersa en archivos y dispositivos personales, permitiendo centralizar los datos en una base de datos en la nube.
+## Arquitectura general
 
-El alcance actual incluye frontend en React, backend en Node.js con Express, autenticación con JWT, persistencia en MongoDB Atlas y un modelo de datos orientado a propiedades, usuarios y citas o visitas.
+El proyecto tiene una arquitectura modular con separación por responsabilidades:
 
----
+- **Presentación:** `client`, construida con React, Vite y Tailwind CSS.
+- **Negocio:** `server/controllers`, donde se procesa la lógica de autenticación, propiedades, solicitudes y administración.
+- **Persistencia:** `server/models`, donde están los esquemas de Mongoose.
+- **Base de datos:** MongoDB Atlas.
 
-## 🏛️ Arquitectura del Sistema
-El sistema está organizado en tres componentes principales:
+Además, el backend usa `routes` para exponer endpoints, `middleware` para autenticación/autorización, `config` para la conexión a base de datos y `socket.io` para notificaciones en tiempo real.
 
-- **Frontend:** carpeta `client`, construida con React y Vite. Aquí vive la interfaz pública y futura interfaz privada para administración.
-- **Backend:** carpeta `server`, construida con Node.js y Express. Expone la API REST, maneja la conexión a la base de datos y centraliza la lógica del servidor.
-- **Base de datos:** MongoDB Atlas, usando Mongoose para definir esquemas y relaciones entre documentos.
+### Rutas principales del frontend
 
-Flujo principal:
-1. El usuario ingresa desde el frontend.
-2. Consulta el catálogo de propiedades.
-3. Solicita una cita o visita.
-4. El backend registra la información en MongoDB Atlas.
-5. El agente o administrador gestiona la solicitud desde el panel correspondiente.
+- Públicas: `/inicio`, `/propiedades`, `/propiedades/:id`, `/nosotros`, `/contacto`, `/login`
+- Administrador: `/admin`, `/admin/visitas`, `/admin/agentes`, `/admin/propiedades`, `/admin/nueva-propiedad`
+- Agente: `/agente`, `/agente/inventario`, `/agente/solicitudes`, `/agente/agenda`, `/agente/nueva-propiedad`
 
----
+### Componentes relevantes
 
-## 🛠️ Tecnologías y Versiones Utilizadas
-- **Lenguaje principal:** JavaScript
-- **Frontend:** React `^19.2.5`
-- **Herramienta de desarrollo frontend:** Vite `^8.0.10`
-- **Backend:** Node.js + Express `^5.2.1`
-- **Base de datos:** MongoDB Atlas
-- **ODM:** Mongoose `^9.6.2`
-- **Autenticación:** jsonwebtoken `^9.0.3`
-- **Variables de entorno:** dotenv `^17.4.2`
-- **Seguridad:** helmet `^8.1.0`
-- **CORS:** cors `^2.8.6`
-- **Logs HTTP:** morgan `^1.10.1`
-- **Hash de contraseñas:** bcrypt `^6.0.0` / bcryptjs `^3.0.3`
+- `PropertyCatalog`
+- `PropertyDetail`
+- `VisitRequestForm`
+- `VisitDetailModal`
+- `MultimediaUploader`
+- `LoginLuxury`
+- `ProtectedRoute`
+- `RoleGuard`
+- `PublicLayout`
+- `AdminLayout`
+- `AgentLayout`
 
 ---
 
-## 📦 Dependencias
-Las dependencias se manejan con `package.json` en las carpetas `client/` y `server/`.
+## Tecnologías, versiones y dependencias
 
-### Dependencias críticas
-- `express`: servidor web y rutas de la API.
-- `mongoose`: modelo de datos y conexión con MongoDB.
-- `jsonwebtoken`: autenticación por tokens.
-- `dotenv`: carga de variables sensibles desde `.env`.
-- `bcrypt` / `bcryptjs`: hash seguro de contraseñas.
-- `helmet` y `cors`: refuerzo básico de seguridad para la API.
-- `vite` y `@vitejs/plugin-react`: entorno de desarrollo del frontend.
+Las versiones listadas corresponden a los `package.json` actuales.
 
-### Cómo se gestionan las dependencias
+### Frontend
 
-- Cada componente (frontend y backend) declara dependencias en su propio `package.json` (`client/package.json` y `server/package.json`).
-- Para instalar dependencias en desarrollo, ejecute en cada carpeta:
+- React `^19.2.5`
+- React DOM `^19.2.5`
+- Vite `^8.0.10`
+- Tailwind CSS `^3.4.17`
+- Axios `^1.16.1`
+- Firebase `^12.14.0`
+- Firebase Admin `^12.7.0`
+- React Router DOM `^7.16.0`
+- Socket.IO Client `^4.8.3`
 
-```bash
-cd server
-npm install
+### Backend
 
-cd ../client
-npm install
+- Node.js
+- Express `^5.2.1`
+- Mongoose `^9.6.2`
+- MongoDB Atlas
+- JWT `^9.0.3`
+- dotenv `^17.4.2`
+- cors `^2.8.6`
+- helmet `^8.1.0`
+- morgan `^1.10.1`
+- Socket.IO `^4.8.3`
+- bcrypt `^6.0.0`
+- bcryptjs `^3.0.3`
+- Firebase Admin `^12.7.0`
+
+---
+
+## Requisitos previos
+
+Antes de ejecutar el proyecto en una computadora nueva, verifica lo siguiente:
+
+| Herramienta / servicio | Uso |
+|---|---|
+| Git | Clonar el repositorio |
+| Node.js 18 o superior | Ejecutar frontend y backend |
+| npm | Instalar dependencias y scripts |
+| MongoDB Atlas | Base de datos en la nube |
+| Firebase Project | Storage y credenciales de administración |
+| Navegador web actual | Probar la interfaz |
+| MongoDB Compass, opcional | Revisar documentos visualmente |
+
+---
+
+## Estructura principal
+
+```text
+./
+  client/
+    src/
+      api/
+      assets/
+      components/
+      context/
+      hooks/
+      layouts/
+      pages/
+      utils/
+  server/
+    config/
+    controllers/
+    middleware/
+    models/
+    routes/
+    scripts/
+  modelado-datos/
+  tesis-docs/
+  README.md
 ```
 
-- Para instalaciones reproducibles en CI o despliegues use `npm ci` (requiere que `package-lock.json` esté presente y commiteado):
+---
 
-```bash
-cd server
-npm ci
+## Variables de entorno
 
-cd ../client
-npm ci
+### `server/.env`
+
+```env
+PORT=5000
+MONGO_URI=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/PumaRealEstate?retryWrites=true&w=majority
+# Opcional si la red bloquea SRV/DNS
+# MONGO_URI_DIRECT=mongodb://<usuario>:<password>@host1:27017,host2:27017,host3:27017/PumaRealEstate?replicaSet=<replicaSet>&authSource=admin&retryWrites=true&w=majority
+JWT_SECRET=clave_secreta_para_desarrollo
+FIREBASE_SERVICE_ACCOUNT_BASE64=base64_del_json_de_service_account
+FIREBASE_STORAGE_BUCKET=tu_proyecto.appspot.com
 ```
 
-- Mantén y versiona el archivo `package-lock.json` para garantizar instalaciones consistentes entre entornos.
-- Para actualizar dependencias de forma controlada puedes usar `npx npm-check-updates -u` seguido de `npm install`.
-- Usa `npm audit` regularmente para detectar vulnerabilidades y `npm audit fix` cuando sea seguro hacerlo.
-- Las herramientas de desarrollo deben preferiblemente instalarse como `devDependencies` y ejecutarse a través de scripts de `package.json` (por ejemplo `npm run lint`).
+### `client/.env.local`
 
-Nota: Este repositorio utiliza `npm`; si deseas cambiar a `yarn` o `pnpm`, actualiza la documentación y los archivos de bloqueo (`yarn.lock` o `pnpm-lock.yaml`) en consecuencia.
+```env
+VITE_API_URL=http://localhost:5000
+VITE_FIREBASE_API_KEY=your_firebase_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_firebase_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_firebase_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### Cómo generar `FIREBASE_SERVICE_ACCOUNT_BASE64`
+
+1. Descarga el archivo JSON de la cuenta de servicio desde Firebase o Google Cloud.
+2. Codifícalo en Base64.
+
+PowerShell:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("ruta\al\service-account.json"))
+```
+
+macOS o Linux:
+
+```bash
+base64 -w 0 service-account.json
+```
+
+### Nota sobre MongoDB Atlas
+
+Si `mongodb+srv://` falla por DNS o por restricciones de red, usa `MONGO_URI_DIRECT`. El backend y el script de seed priorizan esa variable cuando existe.
 
 ---
 
-## 🚀 Requisitos Previos
-Antes de ejecutar el proyecto, el usuario debe tener instalados:
-
-| Herramienta / Servicio | Versión Recomendada | Descripción |
-|------------------------|---------------------|-------------|
-| Git | Última estable | Clonar y versi0onar el proyecto |
-| Node.js | 18 o superior | Ejecutar el backend y el frontend |
-| npm | 9 o superior | Instalar dependencias y correr scripts |
-| React | 19.x | Framework de interfaz usado en el frontend |
-| Vite | 8.x | Entorno de desarrollo del frontend |
-| MongoDB Atlas | Plan gratuito o superior | Base de datos NoSQL del proyecto |
-| MongoDB Compass | Opcional | Revisar colecciones y documentos de forma visual |
-| Cuenta de Firebase | Activa | Subida y gestión de imágenes o videos |
-| Navegador web | Última estable | Probar la aplicación en local |
-| Docker / Docker Compose | Opcional | Solo si se desea usar contenedores auxiliares |
-
----
-
-## 🔧 Configuración Inicial
+## Instalación y ejecución en un entorno limpio
 
 ### 1. Clonar el repositorio
+
 ```bash
 git clone https://github.com/Jennifer-Balseca/puma-real-estate.git
 cd puma-real-estate
 ```
 
-Si el proyecto ya está abierto en VS Code como carpeta local, no es necesario volver a clonarlo; solo ubícate en la raíz del repositorio.
+### 2. Crear los archivos de entorno
 
-### 2. Configuración de variables de entorno
-Crea un archivo `server/.env` basado en el archivo de ejemplo `server/.env.example` (ubicado en la carpeta `server`).
+1. Crea `server/.env` con las variables del bloque anterior.
+2. Crea `client/.env.local` si quieres dejar explícitas las variables del frontend.
 
-**Variables requeridas:**
+### 3. Instalar dependencias
 
-```env
-PORT=5000
-MONGO_URI=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/PumaRealEstate?retryWrites=true&w=majority
-JWT_SECRET=clave_secreta_para_desarrollo
-```
+Instala backend y frontend por separado:
 
-**Variables opcionales (para multimedia):**
-
-```env
-FIREBASE_API_KEY=your_firebase_api_key_here
-FIREBASE_AUTH_DOMAIN=your_firebase_project.firebaseapp.com
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_STORAGE_BUCKET=your_firebase_project.appspot.com
-```
-
-**Cómo obtener `MONGO_URI` desde MongoDB Atlas:**
-
-1. Accede a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
-2. Selecciona tu cluster "PumaRealEstate".
-3. Haz clic en **Connect** → **Drivers** → elige **Node.js**.
-4. Copia la cadena de conexión (algo como `mongodb+srv://...@cluster.mongodb.net/?...`).
-5. Reemplaza `<username>` y `<password>` con tus credenciales reales.
-6. Asegúrate de que la BD sea `PumaRealEstate` al final (ej: `...mongodb.net/PumaRealEstate?...`).
-7. Pega la cadena completa en `server/.env` como `MONGO_URI=`.
-
-**Problema con SRV (DNS/resolución):**
-
-Si ves error `querySrv ECONNREFUSED` al iniciar, significa que tu red no resuelve correctamente `mongodb+srv://`. En ese caso:
-
-1. Obtén la cadena "estándar" sin +srv desde Atlas:
-   - Atlas → Connect → Show additional connection string options → Copy "Standard connection string (without +srv)".
-2. Pégala en `server/.env` como `MONGO_URI_DIRECT=` (línea adicional):
-
-```env
-MONGO_URI_DIRECT=mongodb://user:password@ac-xxx.mongodb.net:27017,ac-yyy.mongodb.net:27017,ac-zzz.mongodb.net:27017/PumaRealEstate?replicaSet=atlas-XXX-shard-0&authSource=admin&retryWrites=true&w=majority
-```
-
-3. El backend preferirá automáticamente `MONGO_URI_DIRECT` si existe, evitando el problema de resolución SRV.
-
-**Importante:** No subas el archivo `.env` al repositorio — contiene credenciales sensibles. El archivo `.env` debe permanecer local y excluido en `.gitignore`.
-
----
-
-## 🗄️ Base de Datos
-
-### 🔹 Estructura de la BD
-El proyecto usa MongoDB con Mongoose y trabaja con un modelo de datos documental centrado en tres colecciones principales. La colección **users** almacena a los usuarios del sistema, incluyendo administradores y agentes con sus credenciales y rol. La colección **properties** guarda la información de los inmuebles publicados, como título, descripción, tipo, estado, precio, ubicación, características e imágenes. La colección **appointments** registra las solicitudes de visita o citas realizadas por los clientes, junto con sus datos de contacto, fecha, hora, mensaje y estado de atención.
-
-En términos de diseño, el modelo permite que un usuario administre varias propiedades, que cada propiedad reciba múltiples solicitudes de visita y que una visita quede asociada tanto al inmueble como al agente responsable. Esto permite mantener la información organizada, evitar duplicidad y gestionar el flujo de trabajo inmobiliario de forma centralizada.
-
-Colecciones principales:
-
-- **users**: usuarios del sistema con `nombre`, `email`, `password` y `rol`.
-- **properties**: inmuebles con `titulo`, `descripcion`, `tipo`, `estado`, `precio`, `ubicacion`, `caracteristicas`, `imagenes` y `agente`.
-- **appointments**: solicitudes de visita con `propiedad`, `clienteNombre`, `clienteEmail`, `clienteTelefono`, `fecha`, `hora`, `mensaje`, `estado` y `agenteResponsable`.
-
-### 🔹 Relaciones importantes
-- Un **User** puede tener muchas **Property**.
-- Un **User** puede tener muchas **Appointment**.
-- Una **Property** puede tener muchas **Appointment**.
-
-Campos de referencia relevantes:
-- `Property.agente` referencia a `User._id`.
-- `Appointment.agenteResponsable` referencia a `User._id`.
-- `Appointment.propiedad` referencia a `Property._id`.
-
-Diagrama del modelo de datos:
-- [modelado-datos/diagrama_modelado_datos.svg](modelado-datos/diagrama_modelado_datos.svg)
-
-### 🔹 Inicialización de la Base de Datos
-MongoDB no requiere migraciones como en SQL. Las colecciones se crean al insertar documentos.
-
-**Flujo de inicialización:**
-
-1. **Crear cuenta y cluster en MongoDB Atlas:**
-   - Accede a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
-   - Crea un cluster (p. ej., "PumaRealEstate").
-   - Añade un usuario de base de datos (p. ej., `jennbalseca1d_db_user`).
-   - Whitelist tu IP en Network Access (o usa `0.0.0.0/0` temporalmente para desarrollo).
-
-2. **Configurar `MONGO_URI` en `server/.env`:**
-   - Copia la cadena de conexión desde Atlas.
-   - Si hay problemas SRV, usa `MONGO_URI_DIRECT` como se explicó arriba.
-
-3. **Instalar dependencias y levantar el backend:**
-
-   ```bash
-   cd server
-   npm install
-   npm run dev
-   ```
-
-4. **Verificar conexión:**
-
-   Desde otra terminal:
-   ```bash
-   curl http://localhost:5000/health
-   # o en PowerShell
-   (Invoke-RestMethod http://localhost:5000/health)
-   ```
-
-   Respuesta esperada (exitosa):
-   ```json
-   {
-     "ok": true,
-     "database": {
-       "connected": true,
-       "host": "ac-sq64ycu-shard-00-02.r5rzfhm.mongodb.net",
-       "name": "PumaRealEstate",
-       "readyState": 1
-     }
-   }
-   ```
-
-   Si `connected` es `false` o hay error de conexión, revisa tu `MONGO_URI` y whitelist en Atlas.
-
-5. **Crear datos de ejemplo (opcional):**
-
-   Para insertar automáticamente usuarios, propiedades y citas de prueba, ejecuta el script seed:
-   
-   ```bash
-   cd server
-   npm run seed
-   ```
-
-   El script crea:
-   - Usuario admin: `admin@example.com` / contraseña `admin123` (hasheada)
-   - Usuario agente: `agente@example.com` / contraseña `agent123` (hasheada)
-   - Propiedad demo: "Departamento demo en el centro"
-   - Cita demo: cliente `cliente@example.com`
-
-   Si algún documento ya existe (por email), no lo duplica.
-
-6. **Verificar datos en la BD:**
-
-   - **Con MongoDB Compass:**
-     - Descarga [MongoDB Compass](https://www.mongodb.com/products/tools/compass).
-     - New Connection → pega tu `MONGO_URI`.
-     - Selecciona la base `PumaRealEstate`.
-     - Busca colecciones `users`, `properties`, `appointments`.
-
-   - **Con mongosh (CLI):**
-     ```bash
-     mongosh "mongodb+srv://user:password@cluster.mongodb.net/PumaRealEstate"
-     > db.users.findOne({ email: "admin@example.com" })
-     > db.properties.findOne({ titulo: "Departamento demo en el centro" })
-     ```
-
-   - **Con atlas UI:**
-     - Accede a tu cluster en Atlas → Collections.
-     - Visualiza documentos directamente en la interfaz.
-
----
-
-## ▶️ Instrucciones para Ejecutar el Proyecto
-
-### 1. Instalar dependencias
-
-**Backend:**
 ```bash
 cd server
 npm install
-```
 
-**Frontend:**
-```bash
-cd client
+cd ../client
 npm install
 ```
 
-### 2. Levantar el backend
+### 4. Inicializar datos base
+
+El proyecto incluye un seed para crear usuarios iniciales de prueba. Ejecuta esto desde `server`:
+
+```bash
+npm run seed
+```
+
+Credenciales creadas por defecto:
+
+- Admin: `admin@pumarealestate.com` / `12345`
+- Agente: `agente@pumarealestate.com` / `agente123`
+
+El seed no crea propiedades ni solicitudes de visita.
+
+### 5. Levantar el backend
 
 Desde la carpeta `server`:
 
 ```bash
-# Desarrollo 
 npm run dev
+```
 
-# O producción
+Producción local:
+
+```bash
 npm start
 ```
 
-Deberías ver:
-```
-✅ Servidor encendido en http://localhost:5000
-```
+### 6. Levantar el frontend
 
-### 3. Levantar el frontend
-
-Desde otra terminal, carpeta `client`:
+Desde la carpeta `client`:
 
 ```bash
 npm run dev
 ```
 
-Deberías ver algo como:
-```
-LOCAL:   http://localhost:5173/
-```
+### 7. Verificar que todo funcione
 
-### 4. Verificar que todo funciona
+Backend:
 
-**Backend alive:**
 ```bash
 curl http://localhost:5000
-
-Invoke-WebRequest http://localhost:5000 -UseBasicParsing
-```
-
-Respuesta: `API de Puma Real Estate funcionando correctamente 🚀`
-
-**Backend + BD conectados:**
-```bash
 curl http://localhost:5000/health
 ```
 
-Respuesta: JSON con `"ok": true` y `"database": { "connected": true, ... }`
+En PowerShell:
 
-**Frontend en navegador:**
-- Abre `http://localhost:5173` en el navegador.
-- Deberías ver la interfaz de React.
+```powershell
+Invoke-WebRequest http://localhost:5000 -UseBasicParsing
+Invoke-RestMethod http://localhost:5000/health
+```
 
-### Puertos y URLs
-- **Backend:** puerto `5000` (API REST).
-- **Frontend:** puerto `5173` (interfaz web).
-- **Base de datos:** MongoDB Atlas (en la nube).
-- **URLs de acceso:**
-  - API: `http://localhost:5000`
-  - Frontend: `http://localhost:5173`
-  - Health check: `http://localhost:5000/health`
+Frontend:
+
+```text
+http://localhost:5173
+```
 
 ---
 
-## 🧪 Pruebas (Opcional)
+## Scripts disponibles
 
-### Pruebas manuales básicas
+### `server/package.json`
 
-**1. Verificar conectividad Mongoose (Node):**
+- `npm start`: ejecuta `node index.js`
+- `npm run dev`: ejecuta `node --watch index.js`
+- `npm run seed`: crea usuarios base de prueba
 
-Desde `server/`, ejecuta:
-```bash
-node test-connect.js
-```
+### `client/package.json`
 
-Respuesta esperada: `OK - Mongoose conectado`
+- `npm run dev`: inicia Vite en modo desarrollo
+- `npm run build`: genera la versión de producción
+- `npm run preview`: previsualiza la build
+- `npm run lint`: ejecuta ESLint
 
-Este script prueba que Node.js pueda conectar a MongoDB usando Mongoose con las variables de `.env`.
+---
 
-**2. Probar endpoints del backend:**
+## Backend, APIs y puertos
 
-Con el backend levantado (`npm run dev`):
+### Puertos
 
-```bash
-# Health check (BD)
-curl http://localhost:5000/health
+- Frontend Vite: `5173`
+- Backend API: `5000` o el valor definido en `PORT`
 
-# Root endpoint
-curl http://localhost:5000
-```
+### Endpoints principales
 
-**3. Datos de prueba:**
+- `GET /` respuesta básica de estado.
+- `GET /health` estado de conexión con MongoDB.
+- `POST /api/auth/login` inicio de sesión.
+- `GET /api/auth/me` sesión actual autenticada.
+- `GET /api/properties` listado público de propiedades.
+- `GET /api/properties/:id` detalle de una propiedad.
+- `GET /api/properties/my-properties` propiedades del usuario autenticado.
+- `POST /api/properties` crear propiedad.
+- `PUT /api/properties/:id` actualizar propiedad.
+- `DELETE /api/properties/:id` eliminar propiedad.
+- `POST /api/properties/:id/media` agregar multimedia.
+- `DELETE /api/properties/:id/media` quitar multimedia.
+- `GET /api/visits` listar solicitudes autenticadas.
+- `GET /api/visits/:id` obtener una solicitud.
+- `POST /api/visits` crear solicitud pública.
+- `POST /api/visits/:id/assign` asignar agente.
+- `POST /api/visits/:id/accept` aceptar solicitud.
+- `PATCH /api/visits/:id/status` actualizar estado de visita.
+- `PATCH /api/visits/:id/property-status` actualizar estado de la propiedad asociada.
+- `GET /api/admin/users` listar usuarios.
+- `GET /api/admin/agents` listar agentes activos.
+- `POST /api/admin/users/register` registrar agente.
+- `POST /api/admin/users` registrar agente.
+- `PATCH /api/admin/users/:id` actualizar agente.
+- `PATCH /api/admin/users/:id/status` activar o desactivar usuario.
 
-Para insertar usuarios y propiedades de prueba:
+### Eventos Socket.IO
+
+- `visit:created`
+- `visit:assigned`
+- `visit:accepted`
+- `visit:statusUpdated`
+- `property:statusUpdated`
+
+---
+
+## Base de datos y configuración
+
+El proyecto usa MongoDB Atlas con Mongoose. Los modelos activos del flujo principal son:
+
+- **User:** nombre, email, password, role y status.
+- **Property:** título, descripción, tipo, modalidad, estado, precio, ubicación, características, imágenes, `mediaUrls`, `storagePaths`, `createdBy` y `agente`.
+- **VisitRequest:** `propertyId`, `fullName`, `phone`, `email`, `preferredDate`, `timeSlot`, `message`, `status`, `assignedAgentId` y `createdBy`.
+
+Relaciones principales:
+
+- `Property.createdBy` referencia a `User._id`.
+- `Property.agente` referencia a `User._id`.
+- `VisitRequest.propertyId` referencia a `Property._id`.
+- `VisitRequest.assignedAgentId` referencia a `User._id`.
+
+Nota: existe un modelo legado llamado `Appointment.js`, pero el flujo activo usa `VisitRequest`.
+
+---
+
+## Pruebas y verificación
+
+El proyecto no incluye una suite automatizada completa todavía. Para validar el sistema en una instalación nueva, se recomienda:
+
+1. Confirmar que MongoDB Atlas responde desde `server` con `npm run dev`.
+2. Ejecutar `npm run seed` para crear usuarios iniciales.
+3. Verificar `GET /health` en `http://localhost:5000/health`.
+4. Abrir `http://localhost:5173` y comprobar inicio de sesión, catálogo y envío de solicitudes.
+5. Revisar que el frontend pueda comunicarse con la API usando `VITE_API_URL`.
+
+---
+
+## Estado actual del proyecto
+
+El proyecto está funcional en su flujo principal:
+
+- frontend público en React,
+- autenticación por JWT,
+- paneles para administrador y agente,
+- propiedades con multimedia,
+- solicitudes de visita,
+- persistencia en MongoDB Atlas,
+- eventos en tiempo real con Socket.IO.
+
+Pendientes o mejoras futuras:
+
+- ampliar pruebas automatizadas,
+- completar más validaciones de negocio,
+- seguir refinando el flujo multimedia y administrativo.
+
+---
+
+## Seguridad y buenas prácticas
+
+- No subas `server/.env` ni `client/.env.local` al repositorio.
+- Protege las credenciales de MongoDB, Firebase y JWT.
+- Usa `npm ci` en despliegues reproducibles cuando exista `package-lock.json`.
+
+---
+
+## Licencia
+
+Proyecto académico. Puede utilizarse licencia MIT si se desea.
+
+### Diagrama del modelo de datos
+- [modelado-datos/diagrama_modelado_datos.svg](modelado-datos/diagrama_modelado_datos.svg)
+
+---
+
+## Endpoints principales
+
+### Backend
+- `GET /` respuesta básica de estado.
+- `GET /health` estado de conexión con MongoDB.
+- `POST /api/auth/login` inicio de sesión.
+- `GET /api/auth/me` sesión actual.
+- `GET /api/properties` listado público de propiedades.
+- `GET /api/properties/:id` detalle de una propiedad.
+- `GET /api/properties/my-properties` propiedades del usuario autenticado.
+- `POST /api/properties` crear propiedad.
+- `PUT /api/properties/:id` actualizar propiedad.
+- `DELETE /api/properties/:id` eliminar propiedad.
+- `POST /api/properties/:id/media` agregar multimedia.
+- `DELETE /api/properties/:id/media` quitar multimedia.
+- `GET /api/visits` listar solicitudes.
+- `GET /api/visits/:id` obtener solicitud.
+- `POST /api/visits` crear solicitud pública.
+- `POST /api/visits/:id/assign` asignar agente.
+- `POST /api/visits/:id/accept` aceptar solicitud.
+- `PATCH /api/visits/:id/status` actualizar estado de visita.
+- `PATCH /api/visits/:id/property-status` actualizar estado de la propiedad asociada.
+- `GET /api/admin/users` listar usuarios.
+- `GET /api/admin/agents` listar agentes activos.
+- `POST /api/admin/users/register` registrar agente.
+- `PATCH /api/admin/users/:id` actualizar agente.
+- `PATCH /api/admin/users/:id/status` activar o desactivar usuario.
+
+### Eventos en tiempo real
+El backend emite eventos por Socket.IO cuando cambian las visitas o el estado de una propiedad:
+- `visit:created`
+- `visit:assigned`
+- `visit:accepted`
+- `visit:statusUpdated`
+- `property:statusUpdated`
+
+---
+
+## Datos de prueba
+El script de seed crea solo usuarios base para pruebas de acceso; no genera propiedades ni solicitudes.
+
 ```bash
 cd server
 npm run seed
 ```
 
-Luego verifica en Compass o mongosh que existan documentos con:
-- Usuario: `admin@example.com`
-- Propiedad: "Departamento demo en el centro"
-- Cita: cliente `cliente@example.com`
+Credenciales que crea por defecto:
+- **Admin:** `admin@pumarealestate.com` / `12345`
+- **Agente:** `agente@pumarealestate.com` / `agente123`
 
-### Pruebas automatizadas
-Actualmente no hay suite de tests automatizadas. El script `npm test` es un placeholder.
-
-**Futuro:** Se recomienda agregar tests con Jest (backend) y Vitest (frontend) cuando el proyecto avance.
+El script no duplica registros si ya existen.
 
 ---
 
-## 📁 Estructura del Proyecto
+## Pruebas de conexión
+Para validar rápidamente la conexión a MongoDB:
 
-```text
-./
-  .gitignore                    
-  README.md                     
-  modelado-datos/
-    diagrama_modelado_datos.svg 
-  client/                         
-    .gitignore
-    eslint.config.js
-    index.html
-    package.json
-    package-lock.json
-    vite.config.js
-    public/
-      favicon.svg
-      icons.svg
-    src/
-      App.css
-      App.jsx
-      index.css
-      main.jsx
-      assets/
-        hero.png
-        react.svg
-        vite.svg
-  server/                       
-    .env                        
-    .env.example                
-    package.json
-    package-lock.json
-    index.js                    
-    test-connect.js             
-    config/
-      db.js                   
-    models/
-      Appointment.js           
-      Property.js               
-      User.js              
-    scripts/
-      seed.js               
+```bash
+cd server
+node test-connect.js
+```
+
+También puedes pasar la URI directamente:
+
+```bash
+node test-connect.js "mongodb+srv://..."
 ```
 
 ---
 
-## 📊 Datos, Archivos o Recursos Necesarios
+## Estado actual del proyecto
+El proyecto está funcional en su flujo principal:
+- frontend público en React,
+- autenticación por JWT,
+- paneles para administrador y agente,
+- propiedades con multimedia,
+- solicitudes de visita,
+- persistencia en MongoDB Atlas,
+- eventos en tiempo real con Socket.IO.
 
-### Recursos incluidos:
-- **Diagrama de modelo de datos:** `modelado-datos/diagrama_modelado_datos.svg` (visualización de relaciones entre colecciones).
-- **Script de seed:** `server/scripts/seed.js` (crea datos de ejemplo automáticamente).
-- **Assets del frontend:** `client/public/` e `client/src/assets/` (imágenes, íconos, etc.).
-
-### Recursos opcionales (para producción/expansión):
-- **CSV / JSON:** para importar datos de prueba o catálogos iniciales (ubicar en carpeta `data/` si existe).
-- **Imágenes de propiedades:** material visual (se cargarían vía Firebase Storage).
-- **Backups de BD:** dumps de MongoDB Atlas (guardar en carpeta `server/backups/` si se implementa).
-- **Credenciales Firebase:** solo si se activa la funcionalidad de multimedia.
-
-### Firebase 
-Esta fase del proyecto **no requiere Firebase** para funcionar. Las variables de Firebase en `.env` son opcionales para futuras funcionalidades de carga de imágenes. Si deseas habilitarlas:
-1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com).
-2. Configura Firebase Storage.
-3. Copia las credenciales a `server/.env`.
-
-Sin Firebase, el proyecto funciona completamente con MongoDB para persistencia de datos.
+Pendientes o futuros avances:
+- ampliar pruebas automatizadas,
+- completar más validaciones de negocio,
+- seguir refinando el flujo multimedia y administrativo.
 
 ---
 
-## 🛡️ Notas de Seguridad
-- No subir contraseñas, claves ni tokens al repositorio.
-- Usar `.env` para variables sensibles.
-- Mantener `server/.env` fuera de control de versiones.
-- Proteger las llaves privadas de Firebase y JWT.
+## Seguridad y buenas prácticas
+- No subas `server/.env` ni `client/.env.local` al repositorio.
+- Mantén seguras las credenciales de MongoDB, Firebase y JWT.
+- Usa `npm ci` en despliegues reproducibles cuando exista `package-lock.json`.
 
 ---
 
-## 📅 Estado del Proyecto
-El proyecto se encuentra **en desarrollo**.
-
-Estado actual:
-- Backend funcional con conexión a MongoDB Atlas.
-- Frontend inicial en React + Vite.
-- Modelado de datos definido para usuarios, propiedades y citas/visitas.
-
-Pendientes o aspectos futuros:
-- Completar panel administrativo.
-- Implementar más rutas y controladores.
-- Añadir pruebas automatizadas.
-- Integrar completamente el flujo de multimedia con Firebase Storage.
-
-Obstáculos técnicos encontrados y solucionados:
-- **Variaciones en la conexión DNS/SRV hacia MongoDB Atlas:** En algunos entornos (redes corporativas, ISP con bloqueos DNS), la resolución SRV falla con error `querySrv ECONNREFUSED`. **Solución:** usar la variable `MONGO_URI_DIRECT` con hosts directos en lugar de SRV (ver sección "Configuración de variables de entorno").
-- **Existencia de modelos duplicados:** Durante la etapa de organización había modelos en `server/models/` y `server/src/models/`. Fueron consolidados en `server/models/`.
-- **Parámetros de conexión optimizados:** Se configuraron timeouts y opciones de Mongoose para mejorar la estabilidad en conexiones lentas.
-
----
-
-## � URLs y Endpoints Principales
-
-### Backend (Express API)
-- **Raíz:** `GET http://localhost:5000/` → "API de Puma Real Estate funcionando correctamente 🚀"
-- **Health check:** `GET http://localhost:5000/health` → Estado de conexión con BD (JSON con `ok`, `database.connected`, etc.)
-
-Futuros endpoints (por implementar):
-- Rutas de autenticación (`POST /login`, `POST /register`)
-- CRUD de propiedades (`GET /properties`, `POST /properties`, etc.)
-- CRUD de citas (`GET /appointments`, `POST /appointments`, etc.)
-
-### Frontend (React + Vite)
-- **URL:** `http://localhost:5173`
-- **Componentes:** App.jsx, componentes reutilizables (por desarrollarse)
-
----
-
-## 📄 Licencia (Opcional)
+## Licencia
 Proyecto académico. Puede utilizarse licencia MIT si se desea.
 
 ---

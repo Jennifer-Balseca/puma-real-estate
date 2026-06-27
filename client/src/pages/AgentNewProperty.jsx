@@ -10,6 +10,7 @@ const initialForm = {
   titulo: '',
   precio: '',
   ubicacion: '',
+  ciudad: '',
   tipo: 'Casa',
   modalidad: 'Venta',
   descripcion: '',
@@ -17,6 +18,7 @@ const initialForm = {
   banos: '',
   areaMetros: '',
   parqueadero: false,
+  amenidades: [],
 };
 
 const propertyTypes = ['Casa', 'Departamento', 'Terreno', 'Oficina'];
@@ -46,6 +48,7 @@ const AgentNewProperty = () => {
       titulo: editingProperty.titulo || '',
       precio: editingProperty.precio ?? '',
       ubicacion: editingProperty.ubicacion?.direccion || '',
+      ciudad: editingProperty.ubicacion?.ciudad || '',
       tipo: editingProperty.tipo || 'Casa',
       modalidad: editingProperty.modalidad || 'Venta',
       descripcion: editingProperty.descripcion || '',
@@ -53,6 +56,7 @@ const AgentNewProperty = () => {
       banos: editingProperty.caracteristicas?.banos ?? '',
       areaMetros: editingProperty.caracteristicas?.areaMetros ?? '',
       parqueadero: Boolean(editingProperty.caracteristicas?.parqueadero),
+      amenidades: editingProperty.caracteristicas?.amenidades || [],
     });
     setSavedProperty(editingProperty);
   }, [editingProperty]);
@@ -181,8 +185,8 @@ const AgentNewProperty = () => {
       return;
     }
 
-    if (!formData.titulo.trim() || !formData.ubicacion.trim() || !formData.descripcion.trim()) {
-      setError('Completa todos los campos obligatorios.');
+    if (!formData.titulo.trim() || !formData.ubicacion.trim() || !formData.descripcion.trim() || !formData.ciudad?.trim()) {
+      setError('Completa todos los campos obligatorios (incluida la ciudad).');
       return;
     }
 
@@ -192,7 +196,10 @@ const AgentNewProperty = () => {
       const payload = {
         titulo: formData.titulo.trim(),
         precio: numericPrice,
-        ubicacion: formData.ubicacion.trim(),
+        ubicacion: {
+          direccion: formData.ubicacion.trim(),
+          ciudad: formData.ciudad.trim(),
+        },
         tipo: formData.tipo,
         modalidad: formData.modalidad,
         descripcion: formData.descripcion.trim(),
@@ -201,6 +208,7 @@ const AgentNewProperty = () => {
           ...(formData.banos !== '' ? { banos: parseOptionalNumber(formData.banos, 'baños') } : {}),
           ...(formData.areaMetros !== '' ? { areaMetros: parseOptionalNumber(formData.areaMetros, 'área') } : {}),
           parqueadero: formData.parqueadero,
+          amenidades: formData.amenidades,
         },
       };
 
@@ -323,6 +331,21 @@ const AgentNewProperty = () => {
           </div>
 
           <div className="space-y-2 md:col-span-2">
+            <label htmlFor="ciudad" className="block text-xs uppercase tracking-[0.25em] text-[#D4AF37]">
+              Ciudad *
+            </label>
+            <input
+              id="ciudad"
+              name="ciudad"
+              type="text"
+              value={formData.ciudad}
+              onChange={handleChange}
+              className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-white outline-none focus:border-[#D4AF37]"
+              placeholder="Ej. Quito, Cumbayá, Madrid"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
             <label htmlFor="descripcion" className="block text-xs uppercase tracking-[0.25em] text-[#D4AF37]">
               Descripción *
             </label>
@@ -399,7 +422,23 @@ const AgentNewProperty = () => {
                 className="h-4 w-4 accent-[#D4AF37]"
               />
               <span>Parqueadero</span>
-            </label>
+              </label>
+
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="amenidades" className="block text-xs uppercase tracking-[0.25em] text-[#D4AF37]">
+                  Amenidades (separadas por coma)
+                </label>
+                <input
+                  id="amenidades"
+                  name="amenidades"
+                  type="text"
+                  value={formData.amenidades.join(', ')} 
+                  onChange={(e) => setFormData({ ...formData, amenidades: e.target.value.split(',').map(item => item.trim()) })}
+                  className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-white outline-none focus:border-[#D4AF37]"
+                  placeholder="Ej. Piscina, Gimnasio, Ascensor"
+                />
+              </div>
+            
           </div>
 
           <div className="md:col-span-2 space-y-4 border border-neutral-800 bg-[#111111] p-5">
@@ -424,56 +463,56 @@ const AgentNewProperty = () => {
               <div className="space-y-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]">Multimedia guardada</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {currentMedia.map((mediaUrl) => {
-                          const isVideo = /\.(mp4|webm|ogg)(\?.*)?$/i.test(mediaUrl);
+                  {currentMedia.map((mediaUrl) => {
+                    const isVideo = /\.(mp4|webm|ogg)(\?.*)?$/i.test(mediaUrl);
 
-                          return (
-                            <div key={mediaUrl} className="relative">
-                              {isVideo ? (
-                                <video src={mediaUrl} controls className="h-28 w-full object-cover" />
-                              ) : (
-                                <img src={mediaUrl} alt="Multimedia actual" className="h-28 w-full object-cover" />
-                              )}
+                    return (
+                      <div key={mediaUrl} className="relative">
+                        {isVideo ? (
+                          <video src={mediaUrl} controls className="h-28 w-full object-cover" />
+                        ) : (
+                          <img loading="lazy" src={mediaUrl} alt="Multimedia actual" className="h-28 w-full object-cover" />
+                        )}
 
-                              {canManage() ? (
-                                <div className="absolute left-1 top-1 flex items-center gap-1">
-                                  <label className="flex items-center gap-1 rounded bg-black/50 px-1 text-xs text-white">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedMedia.includes(mediaUrl)}
-                                      onChange={() => toggleSelectMedia(mediaUrl)}
-                                      className="h-4 w-4 accent-[#D4AF37]"
-                                    />
-                                  </label>
-                                </div>
-                              ) : null}
+                        {canManage() ? (
+                          <div className="absolute left-1 top-1 flex items-center gap-1">
+                            <label className="flex items-center gap-1 rounded bg-black/50 px-1 text-xs text-white">
+                              <input
+                                type="checkbox"
+                                checked={selectedMedia.includes(mediaUrl)}
+                                onChange={() => toggleSelectMedia(mediaUrl)}
+                                className="h-4 w-4 accent-[#D4AF37]"
+                              />
+                            </label>
+                          </div>
+                        ) : null}
 
-                              {canManage() ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveMediaSingle(mediaUrl)}
-                                  disabled={deletingMediaUrl === mediaUrl}
-                                  className="absolute right-1 top-1 rounded bg-red-600/80 px-2 py-1 text-xs text-white"
-                                >
-                                  {deletingMediaUrl === mediaUrl ? 'Eliminando...' : 'Eliminar'}
-                                </button>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                </div>
-                      {canManage() && (
-                        <div className="flex items-center gap-3">
+                        {canManage() ? (
                           <button
                             type="button"
-                            onClick={handleDeleteSelected}
-                            disabled={!selectedMedia.length || deletingMode === 'multi'}
-                            className="mt-2 rounded bg-red-600/80 px-4 py-2 text-sm text-white disabled:opacity-60"
+                            onClick={() => handleRemoveMediaSingle(mediaUrl)}
+                            disabled={deletingMediaUrl === mediaUrl}
+                            className="absolute right-1 top-1 rounded bg-red-600/80 px-2 py-1 text-xs text-white"
                           >
-                            {deletingMode === 'multi' ? 'Eliminando...' : `Eliminar seleccionados (${selectedMedia.length})`}
+                            {deletingMediaUrl === mediaUrl ? 'Eliminando...' : 'Eliminar'}
                           </button>
-                        </div>
-                      )}
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+                {canManage() && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleDeleteSelected}
+                      disabled={!selectedMedia.length || deletingMode === 'multi'}
+                      className="mt-2 rounded bg-red-600/80 px-4 py-2 text-sm text-white disabled:opacity-60"
+                    >
+                      {deletingMode === 'multi' ? 'Eliminando...' : `Eliminar seleccionados (${selectedMedia.length})`}
+                    </button>
+                  </div>
+                )}
               </div>
             ) : null}
           </div>

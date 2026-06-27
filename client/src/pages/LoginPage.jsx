@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, NavLink, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
-const navItems = ['Propiedades', 'Proyectos', 'Nosotros'];
+const navItems = [
+  { label: 'Inicio', to: '/inicio' },
+  { label: 'Propiedades', to: '/propiedades' },
+  { label: 'Nosotros', to: '/nosotros' },
+];
 
 const LoginPage = () => {
   const { isAuthenticated, login, role, user } = useAuth();
@@ -61,33 +65,12 @@ const LoginPage = () => {
         <img
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR0iG6JNbMkK1N68DxVjdMTIPqewE2yjKqOY_GV7jRUmG_mNh3qqRQntkZbP11a_4V8P58-ERBzlMO8TdSamERz5fT-rmZsYtmFameUe01wwVyUQYzF6aLZnlSUsXLDkQ54WrF0syk6MXSVpIgqHEmFmcO2T-z_IPsaE2eg2U842xYdtvrKyrgWgDS53PbElHQ9e9pLCQi544DbJU8vaCENR_CTK0lgvFX-I987tTNAv33z6rJGxjJ_hrA7lav40_N-gFx5F1UyzM"
           alt="Fondo arquitectonico"
+          loading="lazy"
           className="h-full w-full object-cover grayscale mix-blend-overlay"
         />
       </div>
 
-      <header className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-neutral-800 bg-black/90 px-6 backdrop-blur-xl md:h-[72px] md:py-4">
-        <div className="flex items-center gap-2 uppercase tracking-widest">
-          <span className="material-symbols-outlined text-2xl text-primary-container">apartment</span>
-          <span className="font-h1 text-sm font-bold text-primary-container md:text-base">Puma Real Estate</span>
-        </div>
-
-        <nav className="hidden items-center gap-8 font-h1 text-xs uppercase tracking-[0.2em] text-neutral-400 md:flex">
-          {navItems.map((item) => (
-            <a key={item} href="#" className="transition-colors hover:text-primary-container">
-              {item}
-            </a>
-          ))}
-        </nav>
-
-        <button
-          type="button"
-          className="hidden h-10 px-6 font-h1 text-xs uppercase tracking-[0.2em] text-black transition hover:brightness-110 md:block"
-          style={{ backgroundColor: '#D4AF37' }}
-        >
-          Contactar
-        </button>
-      </header>
-
+    
       <main className="relative z-10 flex min-h-screen items-center justify-center px-container-margin pb-unit-xl pt-24 md:pt-28">
         <section className="relative w-full max-w-sm md:max-w-[500px] md:border md:border-neutral-900 md:bg-surface md:p-10 md:shadow-2xl">
           <div className="absolute left-0 top-0 hidden h-full w-1 bg-primary-container md:block" />
@@ -100,9 +83,7 @@ const LoginPage = () => {
             </div>
 
             <h1 className="font-h1 text-h1 text-primary text-center md:text-on-surface">Acceso Exclusivo</h1>
-            <p className="mt-unit-xs font-caption text-caption uppercase tracking-widest text-secondary/70 md:text-on-surface-variant">
-              Inicie sesion en su portal de patrimonio
-            </p>
+           
           </div>
 
           <form className="space-y-unit-lg md:space-y-6" onSubmit={handleSubmit}>

@@ -28,7 +28,8 @@ const propertySchema = new mongoose.Schema({
         habitaciones: { type: Number },
         banos: { type: Number },
         areaMetros: { type: Number }, 
-        parqueadero: { type: Boolean, default: false }
+        parqueadero: { type: Boolean, default: false }, 
+        amenidades: [{ type: String }]
     },
     imagenes: [{ type: String }], 
     mediaUrls: [{ type: String }],

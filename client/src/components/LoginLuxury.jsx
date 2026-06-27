@@ -192,9 +192,7 @@ const LoginLuxury = () => {
             </div>
 
             <h1 className="font-h1 text-h1 text-primary text-center md:text-on-surface">Acceso Exclusivo</h1>
-            <p className="mt-unit-xs font-caption text-caption uppercase tracking-widest text-secondary/70 md:text-on-surface-variant">
-              Inicie sesion en su portal de patrimonio
-            </p>
+            
           </div>
 
           <form className="space-y-unit-lg md:space-y-6" onSubmit={handleSubmit}>
