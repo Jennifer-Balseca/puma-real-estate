@@ -8,9 +8,17 @@ const visitRequestSchema = new mongoose.Schema({
   preferredDate: { type: Date, required: true },
   timeSlot: { type: String, required: true },
   message: { type: String, default: '' },
-  status: { type: String, enum: ['pending', 'in-process', 'finished'], default: 'pending' },
+  requestKey: { type: String, required: false, trim: true },
+  followUpNotes: [{
+    note: { type: String, required: true, trim: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    createdAt: { type: Date, default: Date.now }
+  }],
+  status: { type: String, enum: ['pending', 'in-process', 'finished', 'cancelled'], default: 'pending' },
   assignedAgentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
 }, { timestamps: true });
+
+visitRequestSchema.index({ requestKey: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('VisitRequest', visitRequestSchema);

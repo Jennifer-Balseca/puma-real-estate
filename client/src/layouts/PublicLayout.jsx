@@ -105,20 +105,10 @@ const PublicLayout = ({ children }) => {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row md:gap-8">
           <div className="text-lg font-semibold text-primary-container">Puma Real Estate.</div>
 
-          <div className="hidden flex-wrap justify-center gap-8 font-h1 text-xs tracking-wider md:flex">
-            <a href="#" className="text-zinc-500 transition-colors hover:text-amber-200">
-              Privacidad
-            </a>
-            <a href="#" className="text-zinc-500 transition-colors hover:text-amber-200">
-              Terminos
-            </a>
-            <a href="#" className="text-zinc-500 transition-colors hover:text-amber-200">
-              Inversiones
-            </a>
-          </div>
+    
 
           <div className="font-caption text-[10px] uppercase tracking-[0.2em] text-zinc-600 md:text-xs md:tracking-wider md:text-zinc-500">
-            © 2024 PUMA REAL ESTATE · LEGACY OF EXCELLENCE
+            © 2024 PUMA REAL ESTATE · LEGADO DE EXCELENCIA · TODOS LOS DERECHOS RESERVADOS
           </div>
         </div>
       </footer>

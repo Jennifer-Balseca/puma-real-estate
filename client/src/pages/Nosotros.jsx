@@ -31,7 +31,7 @@ const Nosotros = () => {
               <span className="material-symbols-outlined text-4xl">apartment</span>
             </div>
             <h3 className="font-subtitle text-primary-container mb-2 uppercase tracking-wider">Nuestra Visión</h3>
-            <p className="text-secondary">Curaduría de las propiedades más icónicas del mundo.</p>
+            <p className="text-secondary">Liderar el sector inmobiliario con integridad y exclusividad, simplificando la gestión de propiedades de lujo para superar las expectativas de nuestros clientes.</p>
           </div>
 
           <div className="bg-surface-container-low p-6 border border-neutral-800 hover:border-primary-container transition-colors">
@@ -39,7 +39,7 @@ const Nosotros = () => {
               <span className="material-symbols-outlined text-4xl">diamond</span>
             </div>
             <h3 className="font-subtitle text-primary-container mb-2 uppercase tracking-wider">Exclusividad</h3>
-            <p className="text-secondary">Atención personalizada para clientes de alto perfil.</p>
+            <p className="text-secondary">Selección premium de propiedades y atención personalizada bajo estándares de alta gama.</p>
           </div>
 
           <div className="bg-surface-container-low p-6 border border-neutral-800 hover:border-primary-container transition-colors">
@@ -47,7 +47,7 @@ const Nosotros = () => {
               <span className="material-symbols-outlined text-4xl">verified_user</span>
             </div>
             <h3 className="font-subtitle text-primary-container mb-2 uppercase tracking-wider">Confianza</h3>
-            <p className="text-secondary">Garantizamos la seguridad y privacidad en cada transacción.</p>
+            <p className="text-secondary">Compromiso inquebrantable con su seguridad, privacidad y respaldo legal en cada operación.</p>
           </div>
         </div>
       </section>
@@ -58,7 +58,7 @@ const Nosotros = () => {
           <p className="font-h1 text-2xl md:text-3xl mb-6 italic">¿Desea iniciar su próxima gran inversión?</p>
           <a
             className="inline-flex items-center justify-center gap-3 bg-primary-container text-on-primary-container font-h1 tracking-widest text-sm uppercase px-10 h-14 w-full md:w-auto hover:bg-surface-tint transition-all"
-            href="https://wa.me/#"
+            href="https://wa.me/0995807571"
           >
             <span className="material-symbols-outlined">chat</span>
             CHATEA CON UN ASESOR EN WHATSAPP

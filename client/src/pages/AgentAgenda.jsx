@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import visitService from '../api/visitService';
 import socket from '../socket';
@@ -8,6 +8,30 @@ const statusLabels = {
   pending: 'Pendiente',
   'in-process': 'En proceso',
   finished: 'Finalizado',
+  cancelled: 'Cancelada',
+};
+
+const matchesTab = (visit, tab, userId) => {
+  if (!visit) {
+    return false;
+  }
+
+  const assignedRaw = visit.assignedAgentId ?? visit.assignedAgent;
+  const assignedId = assignedRaw?._id ?? assignedRaw;
+
+  if (!assignedId || String(assignedId) !== String(userId)) {
+    return false;
+  }
+
+  if (tab === 'finished') {
+    return visit.status === 'finished';
+  }
+
+  if (tab === 'cancelled') {
+    return visit.status === 'cancelled';
+  }
+
+  return ['pending', 'in-process'].includes(visit.status);
 };
 
 const AgentAgenda = () => {
@@ -16,13 +40,12 @@ const AgentAgenda = () => {
   const [loadingAgenda, setLoadingAgenda] = useState(false);
   const [selected, setSelected] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [filter, setFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('requests');
 
   const loadAgenda = async () => {
     try {
       setLoadingAgenda(true);
-      const params = { assigned: true, agentId: user?._id };
-      if (filter !== 'all') params.status = filter;
+      const params = { assigned: true, agentId: user?._id, tab: activeTab };
       const data = await visitService.listVisits(params);
       setAgenda(data?.visits ?? data ?? []);
     } catch (err) { console.error(err); } finally { setLoadingAgenda(false); }
@@ -31,39 +54,60 @@ const AgentAgenda = () => {
   useEffect(() => {
     loadAgenda();
 
-    socket.on('visit:assigned', (payload) => {
-      const assignedRaw = payload?.visit?.assignedAgentId ?? payload?.visit?.assignedAgent;
-      const assignedId = assignedRaw?._id ?? assignedRaw;
-      if (assignedId && String(assignedId) === String(user?._id)) {
-        setAgenda((prev) => [payload.visit, ...prev.filter((v) => v._id !== payload.visit._id)]);
-      }
-    });
+    const upsertVisit = (visit) => {
+      if (!visit) return;
+      setAgenda((prev) => {
+        const next = prev.filter((item) => item._id !== visit._id);
+        return matchesTab(visit, activeTab, user?._id) ? [visit, ...next] : next;
+      });
+    };
+
+    const removeVisit = (visitId) => {
+      if (!visitId) return;
+      setAgenda((prev) => prev.filter((v) => v._id !== visitId));
+    };
+
+    socket.on('visit:assigned', (payload) => upsertVisit(payload?.visit));
 
     socket.on('visit:statusUpdated', (payload) => {
-      setAgenda((prev) => prev.map((v) => (v._id === payload.visit._id ? payload.visit : v)));
+      upsertVisit(payload?.visit);
     });
 
-    socket.on('visit:accepted', (payload) => {
-      const assignedRaw = payload?.visit?.assignedAgentId ?? payload?.visit?.assignedAgent;
-      const assignedId = assignedRaw?._id ?? assignedRaw;
-      if (assignedId && String(assignedId) === String(user?._id)) {
-        setAgenda((prev) => [payload.visit, ...prev.filter((v) => v._id !== payload.visit._id)]);
-      }
-    });
+    socket.on('visit:accepted', (payload) => upsertVisit(payload?.visit));
+
+    socket.on('visit:cancelled', (payload) => upsertVisit(payload?.visit));
 
     return () => {
       socket.off('visit:assigned');
       socket.off('visit:statusUpdated');
       socket.off('visit:accepted');
+      socket.off('visit:cancelled');
     };
-  }, [filter]);
+  }, [activeTab, user?._id]);
 
   const handleChangeStatus = async (visitId, nextStatus) => {
     try {
+      if (nextStatus === 'finished') {
+        const confirmed = window.confirm('¿Seguro que deseas marcar esta visita como finalizada?');
+        if (!confirmed) return;
+      }
+
       await visitService.updateStatus(visitId, nextStatus);
       await loadAgenda();
     } catch (err) { console.error(err); }
   };
+
+  const handleCancelVisit = async (visitId) => {
+    try {
+      const confirmed = window.confirm('¿Seguro que deseas cancelar esta visita? Esta acción la moverá a canceladas.');
+      if (!confirmed) return;
+
+      await visitService.cancelVisit(visitId);
+      await loadAgenda();
+    } catch (err) { console.error(err); }
+  };
+
+  const rows = useMemo(() => agenda, [agenda]);
 
   return (
     <div className="pt-6 px-6 pb-12">
@@ -74,12 +118,15 @@ const AgentAgenda = () => {
             <p className="font-caption text-outline uppercase tracking-widest">Visitas asignadas y programadas</p>
           </div>
           <div className="flex items-center gap-3">
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border rounded px-2 py-1 bg-surface-container-low text-on-surface">
-              <option value="all">Todas</option>
-              <option value="pending">Pendientes</option>
-              <option value="in-process">En proceso</option>
-              <option value="finished">Completadas</option>
-            </select>
+            <button type="button" onClick={() => setActiveTab('requests')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'requests' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              Visitas activas
+            </button>
+            <button type="button" onClick={() => setActiveTab('finished')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'finished' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              Finalizadas
+            </button>
+            <button type="button" onClick={() => setActiveTab('cancelled')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'cancelled' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              Canceladas
+            </button>
             <button onClick={loadAgenda} className="border border-neutral-800 px-3 py-1 text-sm">Refrescar</button>
           </div>
         </div>
@@ -87,11 +134,11 @@ const AgentAgenda = () => {
         <div className="space-y-4">
           {loadingAgenda && <div className="text-center text-neutral-400">Cargando agenda...</div>}
 
-          {!loadingAgenda && agenda.length === 0 && (
+          {!loadingAgenda && rows.length === 0 && (
             <div className="text-center text-neutral-500 py-8">No hay visitas en la agenda</div>
           )}
 
-          {!loadingAgenda && agenda.map((v) => (
+          {!loadingAgenda && rows.map((v) => (
             <div key={v._id} className="group flex items-center justify-between bg-[#1A1A1A] border border-transparent hover:border-primary-container/50 transition-all duration-300 p-6">
               <div className="flex-1 grid grid-cols-4 items-center gap-6">
                 <div className="col-span-1">
@@ -126,12 +173,17 @@ const AgentAgenda = () => {
 
                 <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
-                    <button onClick={() => { setSelected(v); setModalOpen(true); }} className="min-w-[160px] h-10 bg-primary-container text-on-primary-container font-subtitle text-sm uppercase tracking-widest hover:brightness-110">Ver detalles</button>
-                    <select value={v.status} onChange={(e) => handleChangeStatus(v._id, e.target.value)} className="h-10 bg-surface-container-low border border-neutral-800 text-white px-3">
+                    <button onClick={() => { setSelected(v); setModalOpen(true); }} className="min-w-[160px] h-10 bg-primary-container text-on-primary-container font-subtitle text-sm uppercase tracking-widest hover:brightness-110" disabled={v.status === 'finished' || v.status === 'cancelled'}>Ver detalles</button>
+                    <select value={v.status} onChange={(e) => handleChangeStatus(v._id, e.target.value)} disabled={v.status === 'finished' || v.status === 'cancelled'} className="h-10 bg-surface-container-low border border-neutral-800 text-white px-3 disabled:opacity-50">
                       <option value="pending">Pendiente</option>
                       <option value="in-process">En proceso</option>
                       <option value="finished">Finalizado</option>
                     </select>
+                    {v.status !== 'finished' && v.status !== 'cancelled' && (
+                      <button onClick={() => handleCancelVisit(v._id)} className="h-10 border border-red-500 text-red-300 px-3 text-sm">
+                        Cancelar
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

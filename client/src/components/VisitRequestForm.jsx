@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import api from '../api/axios';
 import visitService from '../api/visitService';
 
 const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+$/;
@@ -6,6 +7,13 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{10}$/;
 
 const pad = (n) => String(n).padStart(2, '0');
+const createRequestKey = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 const VisitRequestForm = ({ propertyId }) => {
   const today = new Date();
@@ -19,6 +27,7 @@ const VisitRequestForm = ({ propertyId }) => {
   const [hour, setHour] = useState('9');
   const [minute, setMinute] = useState('00');
   const [message, setMessage] = useState('');
+  const [pendingRequest, setPendingRequest] = useState(null);
 
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +62,10 @@ const VisitRequestForm = ({ propertyId }) => {
     return Object.keys(e).length === 0;
   };
 
+  useEffect(() => {
+    validate();
+  }, [name, phone, email, date, hour, minute, ampm]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccess('');
@@ -68,25 +81,74 @@ const VisitRequestForm = ({ propertyId }) => {
     const timeSlot = `${pad(((h24 + 24) % 24))}:${minute} ${ampm}`;
 
     const preferredDate = `${date}T${pad(h24)}:${minute}:00.000Z`;
+    const requestKey = pendingRequest?.requestKey ?? createRequestKey();
+    const payload = {
+      propertyId,
+      fullName: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      preferredDate,
+      timeSlot,
+      message: message.trim(),
+      requestKey,
+    };
 
     try {
       setSubmitting(true);
-      await visitService.createVisit({
-        propertyId,
-        fullName: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        preferredDate,
-        timeSlot,
-        message: message.trim(),
-      });
+      const freshProperty = await api.get(`/api/properties/${propertyId}`);
+      const currentState = String(freshProperty?.data?.property?.estado || '').toLowerCase().trim();
+      if (currentState !== 'disponible') {
+        setErrors((current) => ({ ...current, submit: 'Lo sentimos, esta propiedad ya no se encuentra disponible' }));
+        setPendingRequest(payload);
+        return;
+      }
+
+      await visitService.createVisit(payload);
       setSuccess('Solicitud enviada. Nos contactaremos para confirmar.');
+      setPendingRequest(null);
       setName(''); setPhone(''); setEmail(''); setDate(minDate); setHour('9'); setMinute('00'); setAmpm('AM'); setMessage('');
     } catch (err) {
-      setErrors({ submit: err?.response?.data?.message ?? 'Error enviando la solicitud.' });
+      setPendingRequest(payload);
+      const message = err?.response?.data?.message ?? 'Error enviando la solicitud.';
+      setErrors((current) => ({ ...current, submit: message }));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleRetry = async () => {
+    if (!pendingRequest) return;
+
+    try {
+      setSubmitting(true);
+      const freshProperty = await api.get(`/api/properties/${propertyId}`);
+      const currentState = String(freshProperty?.data?.property?.estado || '').toLowerCase().trim();
+      if (currentState !== 'disponible') {
+        setErrors((current) => ({ ...current, submit: 'Lo sentimos, esta propiedad ya no se encuentra disponible' }));
+        return;
+      }
+
+      await visitService.createVisit(pendingRequest);
+      setSuccess('Solicitud enviada. Nos contactaremos para confirmar.');
+      setPendingRequest(null);
+      setName(''); setPhone(''); setEmail(''); setDate(minDate); setHour('9'); setMinute('00'); setAmpm('AM'); setMessage('');
+      setErrors({});
+    } catch (err) {
+      setErrors((current) => ({ ...current, submit: err?.response?.data?.message ?? 'Error reintentando el envío.' }));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFieldChange = (setter, fieldName, value) => {
+    setter(value);
+    setSuccess('');
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.submit;
+      delete next[fieldName];
+      return next;
+    });
   };
 
   return (
@@ -97,7 +159,7 @@ const VisitRequestForm = ({ propertyId }) => {
             className="w-full h-12 bg-surface-container-low border border-neutral-800 text-white px-4"
             placeholder="Nombre completo"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => handleFieldChange(setName, 'name', e.target.value)}
           />
           {errors.name && <div className="text-rose-400 text-sm mt-1">{errors.name}</div>}
         </div>
@@ -108,7 +170,7 @@ const VisitRequestForm = ({ propertyId }) => {
             placeholder="Ej: 0995706184"
             value={phone}
             maxLength="10"
-            onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+            onChange={(e) => handleFieldChange(setPhone, 'phone', e.target.value.replace(/[^0-9]/g, ''))}
           />
           {errors.phone && <div className="text-rose-400 text-sm mt-1">{errors.phone}</div>}
         </div>
@@ -119,7 +181,7 @@ const VisitRequestForm = ({ propertyId }) => {
           className="w-full h-12 bg-surface-container-low border border-neutral-800 text-white px-4"
           placeholder="Correo electrónico"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => handleFieldChange(setEmail, 'email', e.target.value)}
         />
         {errors.email && <div className="text-rose-400 text-sm mt-1">{errors.email}</div>}
       </div>
@@ -127,14 +189,14 @@ const VisitRequestForm = ({ propertyId }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="text-sm text-neutral-400">Fecha</label>
-          <input type="date" min={minDate} value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-surface-container-low border border-neutral-800 text-white px-4 mt-1" />
+          <input type="date" min={minDate} value={date} onChange={(e) => handleFieldChange(setDate, 'date', e.target.value)} className="w-full h-12 bg-surface-container-low border border-neutral-800 text-white px-4 mt-1" />
           {errors.date && <div className="text-rose-400 text-sm mt-1">{errors.date}</div>}
         </div>
 
         <div>
           <label className="text-sm text-neutral-400">Hora</label>
           <div className="flex gap-2 mt-1">
-            <select value={hour} onChange={(e) => setHour(e.target.value)} className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3">
+            <select value={hour} onChange={(e) => handleFieldChange(setHour, 'time', e.target.value)} className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3">
               <optgroup label="AM">
                 {amHours.map((h) => <option key={`am-${h}`} value={String(h)}>{h}</option>)}
               </optgroup>
@@ -145,7 +207,7 @@ const VisitRequestForm = ({ propertyId }) => {
 
             <select
               value={minute}
-              onChange={(e) => setMinute(e.target.value)}
+              onChange={(e) => handleFieldChange(setMinute, 'time', e.target.value)}
               className="bg-neutral-800 text-white p-2 rounded"
             >
               {minutes.map((min) => (
@@ -155,7 +217,7 @@ const VisitRequestForm = ({ propertyId }) => {
               ))}
             </select>
 
-            <select value={ampm} onChange={(e) => setAmpm(e.target.value)} className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3">
+            <select value={ampm} onChange={(e) => handleFieldChange(setAmpm, 'time', e.target.value)} className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3">
               <option>AM</option>
               <option>PM</option>
             </select>
@@ -165,10 +227,15 @@ const VisitRequestForm = ({ propertyId }) => {
       </div>
 
       <div>
-        <textarea value={message} onChange={(e) => setMessage(e.target.value)} className="w-full bg-surface-container-low border border-neutral-800 text-white p-3" rows={4} placeholder="Mensaje o requerimientos" />
+        <textarea value={message} onChange={(e) => handleFieldChange(setMessage, 'message', e.target.value)} className="w-full bg-surface-container-low border border-neutral-800 text-white p-3" rows={4} placeholder="Mensaje o requerimientos" />
       </div>
 
       {errors.submit && <div className="text-rose-400 text-sm">{errors.submit}</div>}
+      {pendingRequest && errors.submit && (
+        <button type="button" onClick={handleRetry} className="w-full h-12 border border-neutral-700 text-white uppercase tracking-[0.2em] text-sm">
+          Reintentar envío
+        </button>
+      )}
       {success && <div className="text-emerald-400 text-sm">{success}</div>}
 
       <div className="pt-2">

@@ -6,15 +6,19 @@ import { useAuth } from '../context/AuthContext';
 const statusLabels = {
   pending: 'Pendiente',
   'in-process': 'En proceso',
-  finished: 'Finalizado'
+  finished: 'Finalizado',
+  cancelled: 'Cancelada'
 };
 const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [agents, setAgents] = useState([]);
   const [loadingAgents, setLoadingAgents] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [statusChanging, setStatusChanging] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [note, setNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -57,6 +61,12 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
 
   const handleStatusChange = async (nextStatus) => {
     if (!visit) return;
+
+    if (nextStatus === 'finished') {
+      const confirmed = window.confirm('¿Seguro que deseas marcar esta visita como finalizada?');
+      if (!confirmed) return;
+    }
+
     try {
       setStatusChanging(true);
       await visitService.updateStatus(visit._id, nextStatus);
@@ -68,10 +78,50 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
     }
   };
 
+  const handleCancel = async () => {
+    if (!visit) return;
+
+    const confirmed = window.confirm('¿Seguro que deseas cancelar esta visita?');
+    if (!confirmed) return;
+
+    try {
+      setCancelling(true);
+      await visitService.cancelVisit(visit._id);
+      onUpdated?.();
+      onClose();
+    } catch (err) {
+      console.error('cancel error', err);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!visit || !note.trim()) return;
+
+    try {
+      setSavingNote(true);
+      await visitService.addFollowUpNote(visit._id, note.trim());
+      setNote('');
+      onUpdated?.();
+    } catch (err) {
+      console.error('note error', err);
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
   if (!open || !visit) return null;
 
   const property = visit.property ?? visit.propertyId ?? null;
   const assigned = visit.assignedAgent ?? visit.assignedAgentId ?? null;
+  const assignedId = assigned?._id ?? assigned ?? null;
+  const currentRole = String(role ?? '').toLowerCase();
+  const currentUserId = user?._id ?? user?.id ?? null;
+  const canCancel = currentRole === 'admin' || (currentUserId && assignedId && String(currentUserId) === String(assignedId));
+  const canAddNote = currentRole === 'admin' || (assignedId && currentUserId && String(assignedId) === String(currentUserId));
+  const isLocked = visit.status === 'finished' || visit.status === 'cancelled';
+  const canEditStatus = currentRole === 'admin' || (assignedId && currentUserId && String(assignedId) === String(currentUserId));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -116,25 +166,27 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
               <span className="px-2 py-1 rounded bg-surface-container-low text-sm">{statusLabels[visit.status] ?? visit.status}</span>
             </div>
 
-            {String(role ?? '').toLowerCase() === 'admin' && (
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              {canEditStatus && (
                 <select
                   value={visit.status}
                   onChange={(e) => handleStatusChange(e.target.value)}
-                  disabled={statusChanging}
-                  className="border rounded px-2 py-1 bg-surface-container-low text-on-surface"
+                  disabled={statusChanging || isLocked}
+                  className="border rounded px-2 py-1 bg-surface-container-low text-on-surface disabled:opacity-50"
                 >
                   <option value="pending">Pendiente</option>
                   <option value="in-process">En proceso</option>
                   <option value="finished">Finalizado</option>
                 </select>
+              )}
 
+              {String(role ?? '').toLowerCase() === 'admin' && !isLocked && (
                 <div className="flex items-center">
                   <select
                     className="border rounded px-2 py-1 mr-2 bg-surface-container-low text-on-surface"
                     onChange={(e) => setSelectedAgent(e.target.value)}
                     value={selectedAgent ?? ''}
-                    disabled={loadingAgents}
+                    disabled={loadingAgents || isLocked}
                   >
                     <option value="">Asignar agente...</option>
                     {agents.map((a) => (
@@ -144,12 +196,74 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
 
                   <button
                     onClick={handleAssign}
-                    disabled={!selectedAgent || assigning}
+                    disabled={!selectedAgent || assigning || isLocked}
                     className="bg-primary-container text-on-primary-container px-3 py-1 rounded"
                   >
                     {assigning ? 'Asignando...' : 'Asignar'}
                   </button>
                 </div>
+              )}
+
+              {canCancel && !isLocked && (
+                <button
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className="border border-red-500 text-red-400 px-3 py-1 rounded"
+                >
+                  {cancelling ? 'Cancelando...' : 'Cancelar'}
+                </button>
+              )}
+            </div>
+          </section>
+
+          {visit.status === 'cancelled' && (
+            <div className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              Esta visita está cancelada y no puede modificarse.
+            </div>
+          )}
+
+          {visit.status === 'finished' && (
+            <div className="rounded border border-primary-container/40 bg-primary-container/10 px-3 py-2 text-sm text-primary-container">
+              Esta visita está finalizada y no puede modificarse.
+            </div>
+          )}
+
+          <section className="space-y-3 border-t border-neutral-800 pt-4">
+            <h4 className="font-medium text-sm text-on-surface-variant">Notas de seguimiento internas</h4>
+
+            {Array.isArray(visit.followUpNotes) && visit.followUpNotes.length > 0 ? (
+              <div className="space-y-2">
+                {visit.followUpNotes.map((item, index) => (
+                  <div key={`${item._id ?? index}`} className="rounded border border-neutral-800 bg-[#111111] p-3 text-sm text-on-surface-variant">
+                    <div className="flex items-center justify-between gap-2 text-xs uppercase tracking-widest text-neutral-500">
+                      <span>{item.createdBy?.name ?? item.createdBy?.email ?? 'Sistema'}</span>
+                      <span>{item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}</span>
+                    </div>
+                    <p className="mt-2 text-on-surface">{item.note}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-500">No hay notas de seguimiento registradas.</p>
+            )}
+
+            {canAddNote && !isLocked && (
+              <div className="space-y-2">
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={3}
+                  className="w-full rounded border border-neutral-800 bg-surface-container-low p-3 text-white"
+                  placeholder="Escribe una nota interna de seguimiento..."
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNote}
+                  disabled={savingNote || !note.trim()}
+                  className="rounded border border-primary-container px-4 py-2 text-sm text-primary-container disabled:opacity-50"
+                >
+                  {savingNote ? 'Guardando...' : 'Agregar nota'}
+                </button>
               </div>
             )}
           </section>

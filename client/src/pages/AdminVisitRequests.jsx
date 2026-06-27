@@ -2,32 +2,39 @@ import { useEffect, useMemo, useState } from 'react';
 import visitService from '../api/visitService';
 import socket from '../socket';
 import VisitDetailModal from '../components/VisitDetailModal';
-import { useAuth } from '../context/AuthContext';
 
 const statusLabels = {
   pending: 'Pendiente',
   'in-process': 'En proceso',
   finished: 'Finalizado',
+  cancelled: 'Cancelada',
+};
+
+const matchesTab = (visit, tab) => {
+  if (!visit) return false;
+
+  if (tab === 'finished') {
+    return visit.status === 'finished';
+  }
+
+  if (tab === 'cancelled') {
+    return visit.status === 'cancelled';
+  }
+
+  return ['pending', 'in-process'].includes(visit.status);
 };
 
 const AdminVisitRequests = () => {
-  const { role } = useAuth();
+  const [activeTab, setActiveTab] = useState('requests');
   const [visits, setVisits] = useState([]);
-  const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [agents, setAgents] = useState([]);
 
   const load = async () => {
     try {
       setLoading(true);
-      const params = {};
-      if (filter === 'unassigned') params.assigned = false;
-      if (filter === 'assigned') params.assigned = true;
-      if (filter === 'finished') params.status = 'finished';
-
-      const data = await visitService.listVisits(params);
+      const data = await visitService.listVisits({ tab: activeTab });
       setVisits(data?.visits ?? data ?? []);
     } catch (err) {
       console.error(err);
@@ -39,32 +46,28 @@ const AdminVisitRequests = () => {
   useEffect(() => {
     load();
 
-    socket.on('visit:created', (payload) => {
-      if (filter === 'unassigned' && payload?.visit?.assignedAgentId) return;
-      setVisits((prev) => [payload.visit, ...prev]);
-    });
+    const upsertVisit = (visit) => {
+      if (!visit) return;
+      setVisits((prev) => {
+        const next = prev.filter((item) => item._id !== visit._id);
+        return matchesTab(visit, activeTab) ? [visit, ...next] : next;
+      });
+    };
 
-    socket.on('visit:assigned', (payload) => {
-      setVisits((prev) => prev.map((v) => (v._id === payload.visit._id ? payload.visit : v)));
-    });
-
-    socket.on('visit:accepted', (payload) => {
-      if (payload?.visit) {
-        setVisits((prev) => prev.map((v) => (v._id === payload.visit._id ? payload.visit : v)));
-      }
-    });
-
-    socket.on('visit:statusUpdated', (payload) => {
-      setVisits((prev) => prev.map((v) => (v._id === payload.visit._id ? payload.visit : v)));
-    });
+    socket.on('visit:created', (payload) => upsertVisit(payload?.visit));
+    socket.on('visit:assigned', (payload) => upsertVisit(payload?.visit));
+    socket.on('visit:accepted', (payload) => upsertVisit(payload?.visit));
+    socket.on('visit:statusUpdated', (payload) => upsertVisit(payload?.visit));
+    socket.on('visit:cancelled', (payload) => upsertVisit(payload?.visit));
 
     return () => {
       socket.off('visit:created');
       socket.off('visit:assigned');
       socket.off('visit:statusUpdated');
       socket.off('visit:accepted');
+      socket.off('visit:cancelled');
     };
-  }, [filter]);
+  }, [activeTab]);
 
   const handleOpen = (visit) => {
     setSelected(visit);
@@ -78,7 +81,24 @@ const AdminVisitRequests = () => {
 
   const handleChangeStatus = async (visitId, nextStatus) => {
     try {
+      if (nextStatus === 'finished') {
+        const confirmed = window.confirm('¿Seguro que deseas marcar esta visita como finalizada?');
+        if (!confirmed) return;
+      }
+
       await visitService.updateStatus(visitId, nextStatus);
+      await load();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCancelVisit = async (visitId) => {
+    try {
+      const confirmed = window.confirm('¿Seguro que deseas cancelar esta visita? Esta acción la moverá a canceladas.');
+      if (!confirmed) return;
+
+      await visitService.cancelVisit(visitId);
       await load();
     } catch (err) {
       console.error(err);
@@ -96,15 +116,19 @@ const AdminVisitRequests = () => {
         </div>
 
         <div className="flex items-center justify-between mb-6 border-b border-neutral-900 pb-4">
-          <h2 className="font-subtitle text-primary uppercase tracking-widest text-sm">Solicitudes Pendientes</h2>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setActiveTab('requests')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'requests' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              Solicitudes
+            </button>
+            <button type="button" onClick={() => setActiveTab('finished')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'finished' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              Finalizadas
+            </button>
+            <button type="button" onClick={() => setActiveTab('cancelled')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'cancelled' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              Canceladas
+            </button>
+          </div>
           <div className="flex items-center gap-3">
-            <span className="bg-surface-container-high px-3 py-1 text-xs text-on-surface-variant font-caption">{rows.length} VISITAS EN ESPERA</span>
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border rounded px-2 py-1 bg-surface-container-low text-on-surface">
-              <option value="all">Todas</option>
-              <option value="unassigned">No asignadas</option>
-              <option value="assigned">Asignadas</option>
-              <option value="finished">Finalizadas</option>
-            </select>
+            <span className="bg-surface-container-high px-3 py-1 text-xs text-on-surface-variant font-caption">{rows.length} VISITAS</span>
             <button onClick={load} className="border border-neutral-800 px-3 py-1 text-sm">Refrescar</button>
           </div>
         </div>
@@ -124,11 +148,11 @@ const AdminVisitRequests = () => {
                   <p className="font-subtitle text-on-surface">{v.fullName}</p>
                 </div>
 
-                    <div className="col-span-1 flex items-center gap-2">
+                <div className="col-span-1 flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-sm">location_on</span>
                   <div>
                     <p className="font-caption text-outline text-xs uppercase mb-1">Ubicación</p>
-                        <p className="font-body text-on-surface-variant">{v.property?.titulo ?? 'Cargando...'}</p>
+                    <p className="font-body text-on-surface-variant">{v.property?.titulo ?? 'Cargando...'}</p>
                   </div>
                 </div>
 
@@ -153,12 +177,17 @@ const AdminVisitRequests = () => {
                   <button onClick={() => handleOpen(v)} className="min-w-[160px] h-10 bg-primary-container text-on-primary-container font-subtitle text-sm uppercase tracking-widest hover:brightness-110">Ver detalles</button>
 
                   <div className="flex gap-2">
-                    <button onClick={() => { setSelected(v); setModalOpen(true); }} className="min-w-[140px] h-10 border border-neutral-800 text-sm">Asignar agente</button>
-                    <select value={v.status} onChange={(e) => handleChangeStatus(v._id, e.target.value)} className="h-10 bg-surface-container-low border border-neutral-800 text-white px-3">
+                    <button onClick={() => { setSelected(v); setModalOpen(true); }} className="min-w-[140px] h-10 border border-neutral-800 text-sm" disabled={v.status === 'finished' || v.status === 'cancelled'}>Asignar agente</button>
+                    <select value={v.status} onChange={(e) => handleChangeStatus(v._id, e.target.value)} disabled={v.status === 'finished' || v.status === 'cancelled'} className="h-10 bg-surface-container-low border border-neutral-800 text-white px-3 disabled:opacity-50">
                       <option value="pending">Pendiente</option>
                       <option value="in-process">En proceso</option>
                       <option value="finished">Finalizado</option>
                     </select>
+                    {v.status !== 'finished' && v.status !== 'cancelled' && (
+                      <button onClick={() => handleCancelVisit(v._id)} className="h-10 border border-red-500 text-red-300 px-3 text-sm">
+                        Cancelar
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

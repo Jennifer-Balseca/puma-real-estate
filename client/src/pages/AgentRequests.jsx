@@ -9,6 +9,7 @@ const statusLabels = {
   pending: 'Pendiente',
   'in-process': 'En proceso',
   finished: 'Finalizado',
+  cancelled: 'Cancelada',
 };
 
 const AgentRequests = () => {
@@ -44,10 +45,16 @@ const AgentRequests = () => {
       if (vid) setQueue((prev) => prev.filter((v) => v._id !== vid));
     });
 
+    socket.on('visit:cancelled', (payload) => {
+      const vid = payload?.visit?._id ?? payload?.visitId;
+      if (vid) setQueue((prev) => prev.filter((v) => v._id !== vid));
+    });
+
     return () => {
       socket.off('visit:created');
       socket.off('visit:assigned');
       socket.off('visit:accepted');
+      socket.off('visit:cancelled');
     };
   }, []);
 

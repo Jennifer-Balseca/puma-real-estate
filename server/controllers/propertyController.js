@@ -232,10 +232,7 @@ const createProperty = async (req, res) => {
 const listMyProperties = async (req, res) => {
     try {
         const properties = await Property.find({
-            $or: [
-                { createdBy: req.user.id },
-                { agente: req.user.id }
-            ]
+            createdBy: req.user.id
         })
             .populate('agente', 'name email role')
             .populate('createdBy', 'name email role')

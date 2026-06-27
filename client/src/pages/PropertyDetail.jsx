@@ -68,6 +68,9 @@ const PropertyDetail = () => {
           <div className="mt-6">
             <h1 className="font-h1 text-3xl text-white mb-2">{property.titulo}</h1>
             <p className="text-primary-container text-2xl mb-4">${Number(property.precio).toLocaleString()}</p>
+            <p className="text-sm uppercase tracking-[0.2em] text-[#D4AF37] mb-2">
+              {property.tipo || 'Propiedad'} · {property.modalidad || 'Venta'}
+            </p>
 
             <div className="flex flex-wrap gap-6 border-y border-neutral-900 py-4 text-neutral-300">
               <div className="flex items-center gap-2"><span className="material-symbols-outlined">bed</span>{property.caracteristicas?.habitaciones ?? '-'}</div>
