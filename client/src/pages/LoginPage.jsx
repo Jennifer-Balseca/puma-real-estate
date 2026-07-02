@@ -19,6 +19,29 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const wait = (ms) => new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+
+  const waitForBackendReady = async () => {
+    const maxAttempts = 4;
+    const retryDelayMs = 900;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        await api.get('/health', { timeout: 2500 });
+        return;
+      } catch (healthError) {
+        if (attempt === maxAttempts) {
+          throw healthError;
+        }
+
+        await wait(retryDelayMs);
+      }
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -33,9 +56,14 @@ const LoginPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    setStatusMessage('');
     setLoading(true);
 
     try {
+      setStatusMessage('Conectando con el servidor...');
+      await waitForBackendReady();
+
+      setStatusMessage('Validando credenciales...');
       const response = await api.post('/api/auth/login', {
         email,
         password,
@@ -52,8 +80,14 @@ const LoginPage = () => {
       const targetPath = destinationRole === 'Admin' ? '/admin' : '/agente';
       navigate(targetPath, { replace: true, state: { from: location } });
     } catch (loginError) {
-      setError(loginError.response?.data?.message || loginError.message || 'No se pudo iniciar sesion.');
+      const hasNoResponse = !loginError.response;
+      const friendlyMessage = hasNoResponse
+        ? 'No se pudo conectar con el servidor. Intenta nuevamente en unos segundos.'
+        : (loginError.response?.data?.message || loginError.message || 'No se pudo iniciar sesion.');
+
+      setError(friendlyMessage);
     } finally {
+      setStatusMessage('');
       setLoading(false);
     }
   };
@@ -153,8 +187,14 @@ const LoginPage = () => {
               disabled={loading}
               className="h-[52px] w-full bg-primary-container font-subtitle text-subtitle uppercase tracking-widest text-black transition-all duration-200 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {loading ? 'Ingresando...' : 'Iniciar sesion'}
+              {loading ? 'Conectando...' : 'Iniciar sesion'}
             </button>
+
+            {statusMessage ? (
+              <p className="rounded-none border border-amber-500/30 bg-amber-500/10 px-4 py-3 font-caption text-sm text-amber-200" aria-live="polite">
+                {statusMessage}
+              </p>
+            ) : null}
 
             {error ? (
               <p className="rounded-none border border-red-500/30 bg-red-500/10 px-4 py-3 font-caption text-sm text-red-200" aria-live="polite">

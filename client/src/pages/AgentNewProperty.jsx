@@ -36,8 +36,10 @@ const AgentNewProperty = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [amenidadesInput, setAmenidadesInput] = useState('');
 
-  const isEditing = Boolean(editingProperty?._id);
+  const editableProperty = editingProperty ?? savedProperty;
+  const isEditing = Boolean(editableProperty?._id);
 
   useEffect(() => {
     if (!editingProperty) {
@@ -58,7 +60,16 @@ const AgentNewProperty = () => {
       parqueadero: Boolean(editingProperty.caracteristicas?.parqueadero),
       amenidades: editingProperty.caracteristicas?.amenidades || [],
     });
+    setAmenidadesInput((editingProperty.caracteristicas?.amenidades || []).join(', '));
     setSavedProperty(editingProperty);
+  }, [editingProperty]);
+
+  useEffect(() => {
+    if (editingProperty) {
+      return;
+    }
+
+    setAmenidadesInput('');
   }, [editingProperty]);
 
   const activeProperty = savedProperty ?? editingProperty;
@@ -168,6 +179,14 @@ const AgentNewProperty = () => {
     emitPropertiesRefresh();
   };
 
+  const parseAmenidadesInput = (rawValue) => {
+    // Permite frases con espacios y separa solo por comas.
+    return rawValue
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -193,6 +212,8 @@ const AgentNewProperty = () => {
     setLoading(true);
 
     try {
+      const parsedAmenidades = parseAmenidadesInput(amenidadesInput);
+
       const payload = {
         titulo: formData.titulo.trim(),
         precio: numericPrice,
@@ -208,12 +229,12 @@ const AgentNewProperty = () => {
           ...(formData.banos !== '' ? { banos: parseOptionalNumber(formData.banos, 'baños') } : {}),
           ...(formData.areaMetros !== '' ? { areaMetros: parseOptionalNumber(formData.areaMetros, 'área') } : {}),
           parqueadero: formData.parqueadero,
-          amenidades: formData.amenidades,
+          amenidades: parsedAmenidades,
         },
       };
 
       const response = isEditing
-        ? await api.put(`/api/properties/${editingProperty._id}`, payload)
+        ? await api.put(`/api/properties/${editableProperty._id}`, payload)
         : await api.post('/api/properties', payload);
 
       const nextProperty = response.data?.property ?? null;
@@ -432,8 +453,15 @@ const AgentNewProperty = () => {
                   id="amenidades"
                   name="amenidades"
                   type="text"
-                  value={formData.amenidades.join(', ')} 
-                  onChange={(e) => setFormData({ ...formData, amenidades: e.target.value.split(',').map(item => item.trim()) })}
+                  value={amenidadesInput}
+                  onChange={(event) => setAmenidadesInput(event.target.value)}
+                  onBlur={() => {
+                    const parsedAmenidades = parseAmenidadesInput(amenidadesInput);
+                    setFormData((currentValue) => ({
+                      ...currentValue,
+                      amenidades: parsedAmenidades,
+                    }));
+                  }}
                   className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-white outline-none focus:border-[#D4AF37]"
                   placeholder="Ej. Piscina, Gimnasio, Ascensor"
                 />
@@ -464,7 +492,7 @@ const AgentNewProperty = () => {
                 <p className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]">Multimedia guardada</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {currentMedia.map((mediaUrl) => {
-                    const isVideo = /\.(mp4|webm|ogg)(\?.*)?$/i.test(mediaUrl);
+                    const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(mediaUrl);
 
                     return (
                       <div key={mediaUrl} className="relative">

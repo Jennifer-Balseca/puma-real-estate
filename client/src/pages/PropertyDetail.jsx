@@ -32,9 +32,10 @@ const PropertyDetail = () => {
   if (error) return <div className="pt-20 p-6 text-red-400">{error}</div>;
   if (!property) return <div className="pt-20 p-6 text-neutral-400">Propiedad no encontrada.</div>;
 
-  const images = (property.imagenes && property.imagenes.length ? property.imagenes : (property.mediaUrls || [])).filter(Boolean);
-  const prev = () => setActiveIndex((i) => (i - 1 + images.length) % images.length);
-  const next = () => setActiveIndex((i) => (i + 1) % images.length);
+  const media = (property.imagenes && property.imagenes.length ? property.imagenes : (property.mediaUrls || [])).filter(Boolean);
+  const isVideoUrl = (url) => /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url || '');
+  const prev = () => setActiveIndex((i) => (i - 1 + media.length) % media.length);
+  const next = () => setActiveIndex((i) => (i + 1) % media.length);
 
   const isAvailable = String(property?.estado || '').toLowerCase().trim() === 'disponible';
   
@@ -47,17 +48,29 @@ const PropertyDetail = () => {
       {zoomOpen && (
         <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
           <button onClick={() => setZoomOpen(false)} className="absolute top-6 right-6 text-white text-2xl bg-black/40 p-2 rounded">✕</button>
-          <button onClick={() => setZoomIndex((i) => (i - 1 + images.length) % images.length)} className="absolute left-6 top-1/2 -translate-y-1/2 text-white bg-black/40 p-3 rounded">◀</button>
-          <img loading="lazy" src={images[zoomIndex]} alt={`zoom-${zoomIndex}`} className="max-h-[90vh] max-w-[90vw] object-contain" />
-          <button onClick={() => setZoomIndex((i) => (i + 1) % images.length)} className="absolute right-6 top-1/2 -translate-y-1/2 text-white bg-black/40 p-3 rounded">▶</button>
+          <button onClick={() => setZoomIndex((i) => (i - 1 + media.length) % media.length)} className="absolute left-6 top-1/2 -translate-y-1/2 text-white bg-black/40 p-3 rounded">◀</button>
+          {isVideoUrl(media[zoomIndex]) ? (
+            <video src={media[zoomIndex]} controls className="max-h-[90vh] max-w-[90vw] object-contain" />
+          ) : (
+            <img loading="lazy" src={media[zoomIndex]} alt={`zoom-${zoomIndex}`} className="max-h-[90vh] max-w-[90vw] object-contain" />
+          )}
+          <button onClick={() => setZoomIndex((i) => (i + 1) % media.length)} className="absolute right-6 top-1/2 -translate-y-1/2 text-white bg-black/40 p-3 rounded">▶</button>
         </div>
       )}
 
       <section className="grid grid-cols-1 gap-8">
         <div>
           <div className="relative bg-surface-container overflow-hidden rounded">
-            <img loading="lazy" onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }} src={images[activeIndex] || ''} alt={property.titulo} className="w-full h-[620px] md:h-[720px] object-cover cursor-zoom-in" />
-            {images.length > 1 && (
+            {isVideoUrl(media[activeIndex]) ? (
+              <video
+                src={media[activeIndex] || ''}
+                controls
+                className="w-full h-[620px] md:h-[720px] object-cover"
+              />
+            ) : (
+              <img loading="lazy" onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }} src={media[activeIndex] || ''} alt={property.titulo} className="w-full h-[620px] md:h-[720px] object-cover cursor-zoom-in" />
+            )}
+            {media.length > 1 && (
               <>
                 <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/40 p-2 rounded text-white">◀</button>
                 <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/40 p-2 rounded text-white">▶</button>

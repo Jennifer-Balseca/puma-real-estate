@@ -3,9 +3,10 @@ import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import api from '../api/axios';
 import { isFirebaseConfigured, storage } from '../firebase';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'video/mp4'];
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'mp4'];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 40 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm', 'mov'];
 
 const MultimediaUploader = ({ propertyId, onUploaded }) => {
   const [files, setFiles] = useState([]);
@@ -29,6 +30,8 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
     if (!propertyId) return;
 
     let cancelled = false;
+    setPropertyFetchError(false);
+    setPropertySlug('');
 
     const fetchProp = async () => {
       try {
@@ -45,7 +48,10 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
           .replace(/\s+/g, '-')
           .replace(/-+/g, '-');
 
-        if (slug) setPropertySlug(slug);
+        if (slug) {
+          setPropertySlug(slug);
+          setPropertyFetchError(false);
+        }
       } catch (e) {
         console.warn('No se pudo obtener la propiedad para slug:', e?.response?.data || e.message || e);
         setPropertyFetchError(true);
@@ -62,15 +68,38 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
     setSuccessMessage('');
   };
 
+  const isVideoFile = (file) => String(file?.type || '').startsWith('video/');
+
+  const buildStorageObjectName = (file) => {
+    const extension = file.name.split('.').pop()?.toLowerCase() || (isVideoFile(file) ? 'mp4' : 'jpg');
+    const sanitizedSlug = String(propertySlug || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    const baseName = sanitizedSlug || 'propiedad';
+    const fileKind = isVideoFile(file) ? 'video' : 'imagen';
+    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    return `${baseName}-${fileKind}-${uniqueSuffix}.${extension}`;
+  };
+
   const validateFile = (file) => {
     const extension = file.name.split('.').pop()?.toLowerCase() || '';
 
     if (!ALLOWED_MIME_TYPES.includes(file.type) || !ALLOWED_EXTENSIONS.includes(extension)) {
-      return 'Solo se permiten imágenes JPG/PNG o videos MP4.';
+      return 'Solo se permiten imágenes JPG/PNG/WEBP o videos MP4/WEBM/MOV.';
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return 'Cada archivo debe pesar como máximo 5 MB.';
+    const maxAllowedSize = isVideoFile(file) ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+    const maxAllowedSizeLabel = isVideoFile(file) ? '40 MB' : '5 MB';
+
+    if (file.size > maxAllowedSize) {
+      return `El archivo ${file.name} supera el límite permitido (${maxAllowedSizeLabel}).`;
     }
 
     return '';
@@ -82,20 +111,34 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
     resetMessages();
 
     if (!selectedFiles.length) {
-      setFiles([]);
       return;
     }
 
     const invalidFile = selectedFiles.find((file) => validateFile(file));
 
     if (invalidFile) {
-      setFiles([]);
       setError(validateFile(invalidFile));
       event.target.value = '';
       return;
     }
 
-    setFiles(selectedFiles);
+    setFiles((currentFiles) => {
+      const mergedFiles = [...currentFiles, ...selectedFiles];
+
+      const uniqueFiles = mergedFiles.filter((file, index, array) => {
+        const firstIndex = array.findIndex((item) => (
+          item.name === file.name
+          && item.size === file.size
+          && item.lastModified === file.lastModified
+        ));
+
+        return firstIndex === index;
+      });
+
+      return uniqueFiles;
+    });
+
+    event.target.value = '';
   };
 
   const uploadSingleFile = (file) => new Promise((resolve, reject) => {
@@ -104,9 +147,9 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
       return;
     }
 
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const folder = propertySlug ? `${propertySlug}-${propertyId}` : propertyId;
-    const storagePath = `properties/${folder}/${Date.now()}-${safeName}`;
+    const objectName = buildStorageObjectName(file);
+    const folder = propertySlug;
+    const storagePath = `properties/${folder}/${objectName}`;
     const storageRef = ref(storage, storagePath);
     const task = uploadBytesResumable(storageRef, file);
 
@@ -192,8 +235,9 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
     }
 
     if (!propertySlug) {
-      // Not ideal, but allow upload; folder will use propertyId only.
-      console.warn('Property slug not available — storage folder will use propertyId only.');
+      setError('Aún se está preparando el nombre de carpeta con el título de la propiedad. Intenta en unos segundos.');
+      setUploading(false);
+      return;
     }
 
     try {
@@ -232,13 +276,16 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
       <div className="space-y-1">
         <h3 className="text-lg font-semibold text-white">Subir multimedia</h3>
         <p className="text-sm text-[#C0C0C0]">
-          Agrega imágenes JPG/PNG o videos MP4 con un peso máximo de 5 MB por archivo.
+          Agrega imágenes JPG/PNG/WEBP (máx. 5 MB) o videos MP4/WEBM/MOV (máx. 40 MB).
+        </p>
+        <p className="text-xs text-[#8E8E8E]">
+          El nombre del archivo en Firebase se genera automáticamente usando el título de la propiedad.
         </p>
       </div>
 
       <input
         type="file"
-        accept="image/jpeg,image/png,video/mp4"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
         multiple
         onChange={handleFileChange}
         className="block w-full text-sm text-[#C0C0C0] file:mr-4 file:h-12 file:border-0 file:bg-[#D4AF37] file:px-4 file:text-sm file:font-semibold file:uppercase file:tracking-[0.2em] file:text-black hover:file:brightness-110"
