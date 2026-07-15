@@ -72,11 +72,11 @@ const LoginPage = () => {
       login({
         token: response.data.token,
         user: response.data.user,
-        role: response.data.user?.role,
+        role: response.data.user?.role || response.data.user?.rol,
         rememberMe,
       });
 
-      const destinationRole = response.data.user?.role;
+      const destinationRole = response.data.user?.role || response.data.user?.rol;
       const targetPath = destinationRole === 'Admin' ? '/admin' : '/agente';
       navigate(targetPath, { replace: true, state: { from: location } });
     } catch (loginError) {

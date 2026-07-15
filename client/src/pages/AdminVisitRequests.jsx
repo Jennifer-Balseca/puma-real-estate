@@ -12,20 +12,11 @@ const statusLabels = {
 
 const matchesTab = (visit, tab) => {
   if (!visit) return false;
-
-  if (tab === 'finished') {
-    return visit.status === 'finished';
-  }
-
-  if (tab === 'cancelled') {
-    return visit.status === 'cancelled';
-  }
-
-  return ['pending', 'in-process'].includes(visit.status);
+  return visit.status === tab;
 };
 
 const AdminVisitRequests = () => {
-  const [activeTab, setActiveTab] = useState('requests');
+  const [activeTab, setActiveTab] = useState('pending');
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -90,6 +81,7 @@ const AdminVisitRequests = () => {
       await load();
     } catch (err) {
       console.error(err);
+      alert(err.response?.data?.message || 'Error al actualizar el estado de la visita.');
     }
   };
 
@@ -116,9 +108,12 @@ const AdminVisitRequests = () => {
         </div>
 
         <div className="flex items-center justify-between mb-6 border-b border-neutral-900 pb-4">
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setActiveTab('requests')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'requests' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
-              Solicitudes
+          <div className="flex items-center gap-2 flex-wrap">
+            <button type="button" onClick={() => setActiveTab('pending')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'pending' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              Pendientes
+            </button>
+            <button type="button" onClick={() => setActiveTab('in-process')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'in-process' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              En proceso
             </button>
             <button type="button" onClick={() => setActiveTab('finished')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'finished' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
               Finalizadas

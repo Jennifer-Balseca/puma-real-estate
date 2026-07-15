@@ -1,9 +1,4 @@
 {
-  "mdb.presetConnections": [
-    {
-      "name": "Preset Connection",
-      "connectionString": "mongodb://localhost:27017"
-    }
-  ],
-  "css.lint.unknownAtRules": "ignore"
+  "eslint.enable": false,
+  "cSpell.enabled": false
 }

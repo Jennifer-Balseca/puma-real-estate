@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import authService from '../api/authService';
 import RoleGuard from '../components/RoleGuard';
+import socket from '../socket';
 
 const statusStyles = {
   Activo: 'border-primary-container/30 bg-primary-container/10 text-primary-container',
@@ -32,6 +34,33 @@ const AdminAgentes = () => {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
+  // Estados para restablecer contraseña
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetAgent, setResetAgent] = useState(null);
+  const [tempPassword, setTempPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleResetPasswordClick = (agent) => {
+    setResetAgent(agent);
+    setTempPassword('');
+    setResetModalOpen(false);
+    setResetModalOpen(true);
+  };
+
+  const executePasswordReset = async () => {
+    if (!resetAgent) return;
+    setResetLoading(true);
+    try {
+      const data = await authService.resetAgentPassword(resetAgent._id);
+      setTempPassword(data.tempPassword);
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo restablecer la contraseña.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const loadAgents = async () => {
     setLoading(true);
     setError('');
@@ -51,6 +80,16 @@ const AdminAgentes = () => {
 
   useEffect(() => {
     void loadAgents();
+
+    const handleAgentUpdate = () => {
+      void loadAgents();
+    };
+
+    socket.on('agent:updated', handleAgentUpdate);
+
+    return () => {
+      socket.off('agent:updated', handleAgentUpdate);
+    };
   }, []);
 
   const summary = useMemo(() => {
@@ -247,23 +286,34 @@ const AdminAgentes = () => {
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDeactivate(agent._id)}
-                          className={`inline-flex shrink-0 items-center gap-2 border px-3 py-2 text-[10px] uppercase tracking-[0.25em] transition-colors border-neutral-700 text-on-surface hover:border-error hover:text-error ${updatingId === agent._id ? 'opacity-70' : ''}`}
-                        >
-                          <span className="material-symbols-outlined text-sm">person_off</span>
-                          {updatingId === agent._id ? '...' : 'Desactivar'}
-                        </button>
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(agent)}
+                            className="inline-flex items-center gap-2 border border-primary-container px-3 py-2 text-[10px] uppercase tracking-[0.25em] text-primary-container transition-colors hover:bg-primary-container hover:text-black"
+                          >
+                            <span className="material-symbols-outlined text-sm">edit</span>
+                            Editar
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(agent)}
-                          className="inline-flex shrink-0 items-center gap-2 border border-primary-container px-3 py-2 text-[10px] uppercase tracking-[0.25em] text-primary-container transition-colors hover:bg-primary-container hover:text-black"
-                        >
-                          <span className="material-symbols-outlined text-sm">edit</span>
-                          Editar
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleResetPasswordClick(agent)}
+                            className="inline-flex items-center gap-2 border border-neutral-700 px-3 py-2 text-[10px] uppercase tracking-[0.25em] text-neutral-300 transition-colors hover:border-primary hover:text-white"
+                          >
+                            <span className="material-symbols-outlined text-sm">lock_reset</span>
+                            Clave
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeactivate(agent._id)}
+                            className={`inline-flex items-center gap-2 border px-3 py-2 text-[10px] uppercase tracking-[0.25em] transition-colors border-neutral-700 text-on-surface hover:border-error hover:text-error ${updatingId === agent._id ? 'opacity-70' : ''}`}
+                          >
+                            <span className="material-symbols-outlined text-sm">person_off</span>
+                            {updatingId === agent._id ? '...' : 'Estado'}
+                          </button>
+                        </div>
                       </div>
                     </article>
                   );
@@ -322,6 +372,14 @@ const AdminAgentes = () => {
                               >
                                 <span className="material-symbols-outlined text-sm">edit</span>
                                 Editar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleResetPasswordClick(agent)}
+                                className="inline-flex items-center gap-2 border border-neutral-700 px-4 py-2 text-xs uppercase tracking-widest text-neutral-300 transition-colors hover:border-primary hover:text-white"
+                              >
+                                <span className="material-symbols-outlined text-sm">lock_reset</span>
+                                Clave
                               </button>
                               <button
                                 type="button"
@@ -418,21 +476,23 @@ const AdminAgentes = () => {
                     />
                   </label>
 
-                  <label className="space-y-2">
-                    <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Contraseña</span>
-                    <p className="text-[10px] uppercase tracking-[0.25em] text-neutral-600">
-                      {modalMode === 'edit' ? 'Dejar en blanco para conservar la contraseña actual' : 'Obligatoria para crear el agente'}
-                    </p>
-                    <input
-                      name="password"
-                      value={agentForm.password}
-                      onChange={handleFormChange}
-                      type="password"
-                      placeholder="••••••••••••"
-                      className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-on-surface placeholder:text-neutral-600 focus:border-primary-container focus:outline-none"
-                      required={modalMode === 'create'}
-                    />
-                  </label>
+                  {modalMode === 'create' && (
+                    <label className="space-y-2">
+                      <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Contraseña</span>
+                      <p className="text-[10px] uppercase tracking-[0.25em] text-neutral-600">
+                        Obligatoria para crear el agente
+                      </p>
+                      <input
+                        name="password"
+                        value={agentForm.password}
+                        onChange={handleFormChange}
+                        type="password"
+                        placeholder="••••••••••••"
+                        className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-on-surface placeholder:text-neutral-600 focus:border-primary-container focus:outline-none"
+                        required
+                      />
+                    </label>
+                  )}
 
                   <label className="space-y-2">
                     <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Rol</span>
@@ -447,18 +507,20 @@ const AdminAgentes = () => {
                     </select>
                   </label>
 
-                  <label className="space-y-2 md:col-span-2">
-                    <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Estado</span>
-                    <select
-                      name="status"
-                      value={agentForm.status}
-                      onChange={handleFormChange}
-                      className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-on-surface focus:border-primary-container focus:outline-none"
-                    >
-                      <option value="Activo">Activo</option>
-                      <option value="Inactivo">Inactivo</option>
-                    </select>
-                  </label>
+                  {modalMode === 'edit' && (
+                    <label className="space-y-2 md:col-span-2">
+                      <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Estado</span>
+                      <select
+                        name="status"
+                        value={agentForm.status}
+                        onChange={handleFormChange}
+                        className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-on-surface focus:border-primary-container focus:outline-none"
+                      >
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                      </select>
+                    </label>
+                  )}
                 </div>
 
                 {formError ? (
@@ -486,6 +548,87 @@ const AdminAgentes = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        ) : null}
+
+        {/* MODAL DE RESTABLECER CONTRASEÑA PROVISIONAL */}
+        {resetModalOpen && resetAgent ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md border border-neutral-800 bg-[#121212] p-6 shadow-2xl transition-all duration-300">
+              <div className="mb-6 flex items-center justify-between border-b border-neutral-900 pb-3">
+                <h3 className="font-h1 text-sm uppercase tracking-widest text-primary">
+                  Restablecer Contraseña
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setResetModalOpen(false)}
+                  className="text-neutral-400 hover:text-white transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+
+              {!tempPassword ? (
+                <div className="space-y-4">
+                  <p className="text-xs text-neutral-300 leading-relaxed">
+                    ¿Está seguro de que desea restablecer la contraseña del agente <strong className="text-white">{resetAgent.name || resetAgent.email}</strong>?
+                  </p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Esto generará una clave temporal que sobrescribirá su acceso actual. El agente deberá ingresar con la clave provista para acceder.
+                  </p>
+                  <div className="flex justify-end gap-3 pt-4 border-t border-neutral-900">
+                    <button
+                      type="button"
+                      onClick={() => setResetModalOpen(false)}
+                      disabled={resetLoading}
+                      className="border border-neutral-700 bg-neutral-900 text-neutral-300 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={executePasswordReset}
+                      disabled={resetLoading}
+                      className="bg-primary-container text-black px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition hover:brightness-110"
+                    >
+                      {resetLoading ? 'Generando...' : 'Sí, Restablecer'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-400">
+                    ¡Contraseña provisional restablecida con éxito!
+                  </div>
+                  <p className="text-xs text-neutral-300 leading-relaxed">
+                    Por favor, copie la siguiente clave provisoria y entréguesela de forma segura al agente:
+                  </p>
+                  <div className="relative flex items-center justify-between border border-neutral-800 bg-neutral-950 px-4 py-3 font-mono text-sm font-bold text-primary tracking-wide">
+                    <span>{tempPassword}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(tempPassword);
+                        alert('¡Copiado al portapapeles!');
+                      }}
+                      className="text-neutral-500 hover:text-white transition-colors"
+                      title="Copiar clave"
+                    >
+                      <span className="material-symbols-outlined text-base">content_copy</span>
+                    </button>
+                  </div>
+                  <div className="flex justify-end pt-4 border-t border-neutral-900">
+                    <button
+                      type="button"
+                      onClick={() => setResetModalOpen(false)}
+                      className="bg-primary-container text-black px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition hover:brightness-110"
+                    >
+                      Listo
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : null}

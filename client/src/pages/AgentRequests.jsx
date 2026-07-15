@@ -20,6 +20,8 @@ const AgentRequests = () => {
   const [selected, setSelected] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  const [error, setError] = useState('');
+
   const loadQueue = async () => {
     try {
       setLoadingQueue(true);
@@ -60,10 +62,14 @@ const AgentRequests = () => {
 
   const handleAccept = async (visitId) => {
     try {
+      setError('');
       await visitService.acceptVisit(visitId);
       setQueue((prev) => prev.filter((v) => v._id !== visitId));
       navigate('/agente/agenda');
-    } catch (err) { console.error('accept error', err); }
+    } catch (err) {
+      console.error('accept error', err);
+      setError(err.response?.data?.message || 'No se pudo aceptar la visita.');
+    }
   };
 
   return (
@@ -73,6 +79,12 @@ const AgentRequests = () => {
           <h1 className="font-h1 text-3xl text-on-surface mb-1">Solicitudes de visita</h1>
           <p className="font-caption text-outline uppercase tracking-widest">Solicitudes disponibles para agentes</p>
         </div>
+
+        {error && (
+          <div className="mb-6 rounded border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-4">
           {loadingQueue && <div className="text-center text-neutral-400">Cargando solicitudes...</div>}

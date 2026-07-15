@@ -38,22 +38,22 @@ const VisitRequestForm = ({ propertyId }) => {
   const pmHours = useMemo(() => [12, 1, 2, 3, 4, 5, 6, 7, 8], []);
   const minutes = Array.from({ length: 12 }, (_, i) => i * 5);
 
-  const shouldShowFieldError = (fieldName, value, force = false) => {
-    if (force) return true;
-    return Boolean(touched[fieldName]) || String(value || '').trim().length > 0;
-  };
-
-  const validate = (force = false) => {
+  const validate = (force = false, currentTouched = touched) => {
     const e = {};
     const nameValue = name.trim();
     const phoneValue = phone.trim();
     const emailValue = email.trim();
 
-    if (shouldShowFieldError('name', nameValue, force) && nameValue && !nameRegex.test(nameValue)) {
+    const shouldShow = (fieldName) => {
+      if (force) return true;
+      return Boolean(currentTouched[fieldName]);
+    };
+
+    if (shouldShow('name') && nameValue && !nameRegex.test(nameValue)) {
       e.name = 'Ingrese un nombre válido (solo letras).';
     }
 
-    if (shouldShowFieldError('phone', phoneValue, force) && phoneValue) {
+    if (shouldShow('phone') && phoneValue) {
       if (!/^[0-9]+$/.test(phoneValue)) {
         e.phone = 'El teléfono debe contener solo números.';
       } else if (phoneValue.length !== 10) {
@@ -61,11 +61,11 @@ const VisitRequestForm = ({ propertyId }) => {
       }
     }
 
-    if (shouldShowFieldError('email', emailValue, force) && emailValue && !emailRegex.test(emailValue)) {
+    if (shouldShow('email') && emailValue && !emailRegex.test(emailValue)) {
       e.email = 'Correo electrónico inválido.';
     }
 
-    if (shouldShowFieldError('date', date, force) && date) {
+    if (shouldShow('date') && date) {
       if (date < minDate) {
         e.date = 'La fecha no puede ser anterior a hoy.';
       }
@@ -79,7 +79,7 @@ const VisitRequestForm = ({ propertyId }) => {
       if (h === 12) h24 = 12; else h24 = h + 12;
     }
 
-    if (shouldShowFieldError('time', `${hour}:${minute} ${ampm}`, force) && (h24 < 7 || h24 > 20)) {
+    if (shouldShow('time') && (h24 < 7 || h24 > 20)) {
       e.time = 'El horario disponible es de 07:00 AM a 08:00 PM.';
     }
 
@@ -87,9 +87,13 @@ const VisitRequestForm = ({ propertyId }) => {
     return Object.keys(e).length === 0;
   };
 
-  useEffect(() => {
-    validate(false);
-  }, [name, phone, email, date, hour, minute, ampm, touched]);
+  const handleBlur = (fieldName) => {
+    setTouched((current) => {
+      const next = { ...current, [fieldName]: true };
+      validate(false, next);
+      return next;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -177,7 +181,6 @@ const VisitRequestForm = ({ propertyId }) => {
   const handleFieldChange = (setter, fieldName, value) => {
     setter(value);
     setSuccess('');
-    setTouched((current) => ({ ...current, [fieldName]: true }));
     setErrors((current) => {
       const next = { ...current };
       delete next.submit;
@@ -194,7 +197,7 @@ const VisitRequestForm = ({ propertyId }) => {
             className="w-full h-12 bg-surface-container-low border border-neutral-800 text-white px-4"
             placeholder="Nombre completo"
             value={name}
-            onBlur={() => setTouched((current) => ({ ...current, name: true }))}
+            onBlur={() => handleBlur('name')}
             onChange={(e) => handleFieldChange(setName, 'name', e.target.value)}
           />
           {errors.name && <div className="text-rose-400 text-sm mt-1">{errors.name}</div>}
@@ -206,7 +209,7 @@ const VisitRequestForm = ({ propertyId }) => {
             placeholder="Ej: 0995706184"
             value={phone}
             maxLength="10"
-            onBlur={() => setTouched((current) => ({ ...current, phone: true }))}
+            onBlur={() => handleBlur('phone')}
             onChange={(e) => handleFieldChange(setPhone, 'phone', e.target.value.replace(/[^0-9]/g, ''))}
           />
           {errors.phone && <div className="text-rose-400 text-sm mt-1">{errors.phone}</div>}
@@ -218,7 +221,7 @@ const VisitRequestForm = ({ propertyId }) => {
           className="w-full h-12 bg-surface-container-low border border-neutral-800 text-white px-4"
           placeholder="Correo electrónico"
           value={email}
-          onBlur={() => setTouched((current) => ({ ...current, email: true }))}
+          onBlur={() => handleBlur('email')}
           onChange={(e) => handleFieldChange(setEmail, 'email', e.target.value)}
         />
         {errors.email && <div className="text-rose-400 text-sm mt-1">{errors.email}</div>}
@@ -227,14 +230,14 @@ const VisitRequestForm = ({ propertyId }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="text-sm text-neutral-400">Fecha</label>
-          <input type="date" min={minDate} value={date} onBlur={() => setTouched((current) => ({ ...current, date: true }))} onChange={(e) => handleFieldChange(setDate, 'date', e.target.value)} className="w-full h-12 bg-surface-container-low border border-neutral-800 text-white px-4 mt-1" />
+          <input type="date" min={minDate} value={date} onBlur={() => handleBlur('date')} onChange={(e) => handleFieldChange(setDate, 'date', e.target.value)} className="w-full h-12 bg-surface-container-low border border-neutral-800 text-white px-4 mt-1" />
           {errors.date && <div className="text-rose-400 text-sm mt-1">{errors.date}</div>}
         </div>
 
         <div>
           <label className="text-sm text-neutral-400">Hora</label>
           <div className="flex gap-2 mt-1">
-            <select value={hour} onBlur={() => setTouched((current) => ({ ...current, time: true }))} onChange={(e) => handleFieldChange(setHour, 'time', e.target.value)} className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3">
+            <select value={hour} onBlur={() => handleBlur('time')} onChange={(e) => handleFieldChange(setHour, 'time', e.target.value)} className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3">
               <optgroup label="AM">
                 {amHours.map((h) => <option key={`am-${h}`} value={String(h)}>{h}</option>)}
               </optgroup>
@@ -245,7 +248,7 @@ const VisitRequestForm = ({ propertyId }) => {
 
             <select
               value={minute}
-              onBlur={() => setTouched((current) => ({ ...current, time: true }))}
+              onBlur={() => handleBlur('time')}
               onChange={(e) => handleFieldChange(setMinute, 'time', e.target.value)}
               className="bg-neutral-800 text-white p-2 rounded"
             >
@@ -256,7 +259,7 @@ const VisitRequestForm = ({ propertyId }) => {
               ))}
             </select>
 
-            <select value={ampm} onBlur={() => setTouched((current) => ({ ...current, time: true }))} onChange={(e) => handleFieldChange(setAmpm, 'time', e.target.value)} className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3">
+            <select value={ampm} onBlur={() => handleBlur('time')} onChange={(e) => handleFieldChange(setAmpm, 'time', e.target.value)} className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3">
               <option>AM</option>
               <option>PM</option>
             </select>

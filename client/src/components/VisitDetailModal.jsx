@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import visitService from '../api/visitService';
 import { useAuth } from '../context/AuthContext';
+import socket from '../socket';
 
 // Modal reutilizable para ver y actualizar una solicitud de visita
 const statusLabels = {
@@ -19,16 +20,18 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
   const [cancelling, setCancelling] = useState(false);
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !visit) return;
+    setError('');
 
     // cargar agentes sólo si el usuario es admin 
     const load = async () => {
       if (!role || String(role).toLowerCase() !== 'admin') return;
       try {
         setLoadingAgents(true);
-        const data = await visitService.listAgents();
+        const data = await visitService.listAgents({ date: visit.preferredDate, timeSlot: visit.timeSlot });
         setAgents(data?.agents ?? data ?? []);
       } catch (err) {
       } finally {
@@ -37,7 +40,21 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
     };
 
     load();
-  }, [open, role]);
+
+    const handleRealtimeUpdate = () => {
+      void load();
+    };
+
+    socket.on('visit:assigned', handleRealtimeUpdate);
+    socket.on('visit:accepted', handleRealtimeUpdate);
+    socket.on('visit:statusUpdated', handleRealtimeUpdate);
+
+    return () => {
+      socket.off('visit:assigned', handleRealtimeUpdate);
+      socket.off('visit:accepted', handleRealtimeUpdate);
+      socket.off('visit:statusUpdated', handleRealtimeUpdate);
+    };
+  }, [open, role, visit]);
   useEffect(() => {
     if (!visit) return;
     const assigned = visit.assignedAgent ?? visit.assignedAgentId ?? null;
@@ -49,11 +66,13 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
     if (!selectedAgent || !visit) return;
     try {
       setAssigning(true);
+      setError('');
       await visitService.assignAgent(visit._id, selectedAgent);
       onUpdated?.();
       onClose();
     } catch (err) {
       console.error('assign error', err);
+      setError(err.response?.data?.message || 'No se pudo asignar el agente.');
     } finally {
       setAssigning(false);
     }
@@ -69,10 +88,12 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
 
     try {
       setStatusChanging(true);
+      setError('');
       await visitService.updateStatus(visit._id, nextStatus);
       onUpdated?.();
     } catch (err) {
       console.error('status change error', err);
+      setError(err.response?.data?.message || 'No se pudo cambiar el estado de la visita.');
     } finally {
       setStatusChanging(false);
     }
@@ -86,11 +107,13 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
 
     try {
       setCancelling(true);
+      setError('');
       await visitService.cancelVisit(visit._id);
       onUpdated?.();
       onClose();
     } catch (err) {
       console.error('cancel error', err);
+      setError(err.response?.data?.message || 'No se pudo cancelar la visita.');
     } finally {
       setCancelling(false);
     }
@@ -101,11 +124,13 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
 
     try {
       setSavingNote(true);
+      setError('');
       await visitService.addFollowUpNote(visit._id, note.trim());
       setNote('');
       onUpdated?.();
     } catch (err) {
       console.error('note error', err);
+      setError(err.response?.data?.message || 'No se pudo agregar la nota.');
     } finally {
       setSavingNote(false);
     }
@@ -132,6 +157,11 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
         </div>
 
         <div className="p-4 space-y-4 text-on-surface">
+          {error && (
+            <div className="rounded border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+              {error}
+            </div>
+          )}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h4 className="font-medium text-sm text-on-surface-variant">Solicitante</h4>
@@ -189,9 +219,20 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
                     disabled={loadingAgents || isLocked}
                   >
                     <option value="">Asignar agente...</option>
-                    {agents.map((a) => (
-                      <option key={a._id} value={a._id}>{a.name ?? a.nombre ?? a.email}</option>
-                    ))}
+                    {agents.map((a) => {
+                      const isCurrentlyAssigned = assignedId && String(assignedId) === String(a._id);
+                      const shouldDisable = a.isBusy && !isCurrentlyAssigned;
+                      return (
+                        <option 
+                          key={a._id} 
+                          value={a._id} 
+                          disabled={shouldDisable}
+                          className={shouldDisable ? "text-neutral-500" : ""}
+                        >
+                          {a.name ?? a.nombre ?? a.email} {shouldDisable ? '(No disponible)' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
 
                   <button
