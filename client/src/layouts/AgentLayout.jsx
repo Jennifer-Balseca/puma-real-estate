@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import NotificationBell from '../components/NotificationBell';
 
 const agentLinks = [
   { label: 'Inventario', to: '/agente/inventario' },
@@ -30,14 +31,17 @@ const AgentLayout = ({ children }) => {
             <span className="font-h1 text-sm font-bold md:text-base">Puma Real Estate</span>
           </Link>
 
-          <button
-            type="button"
-            className="rounded-none border border-neutral-800 px-3 py-2 text-primary-container md:hidden"
-            onClick={() => setIsMenuOpen((currentValue) => !currentValue)}
-            aria-label="Abrir menu"
-          >
-            <span className="material-symbols-outlined">menu</span>
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <NotificationBell />
+            <button
+              type="button"
+              className="rounded-none border border-neutral-800 px-3 py-2 text-primary-container"
+              onClick={() => setIsMenuOpen((currentValue) => !currentValue)}
+              aria-label="Abrir menu"
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+          </div>
 
           <div className="hidden items-center gap-6 md:flex">
             <nav className="flex items-center gap-8 font-h1 text-xs uppercase tracking-[0.2em] text-neutral-400">
@@ -58,6 +62,7 @@ const AgentLayout = ({ children }) => {
               <span className="font-caption text-[10px] uppercase tracking-[0.2em] text-zinc-500 mr-2">
                 {user?.email}
               </span>
+              <NotificationBell />
               <button
                 type="button"
                 onClick={() => setIsChangePasswordOpen(true)}

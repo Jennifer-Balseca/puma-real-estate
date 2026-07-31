@@ -193,7 +193,13 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
           <section className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-on-surface-variant">Estado:</span>
-              <span className="px-2 py-1 rounded bg-surface-container-low text-sm">{statusLabels[visit.status] ?? visit.status}</span>
+              {(() => {
+                const isExpired = new Date(visit.preferredDate) < new Date() && visit.status !== 'finished' && visit.status !== 'cancelled';
+                if (isExpired) {
+                  return <span className="px-2 py-1 rounded bg-red-950/80 border border-red-700/50 text-red-400 text-sm font-semibold">Vencida</span>;
+                }
+                return <span className="px-2 py-1 rounded bg-surface-container-low text-sm">{statusLabels[visit.status] ?? visit.status}</span>;
+              })()}
             </div>
 
             <div className="flex items-center gap-2">

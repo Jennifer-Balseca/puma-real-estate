@@ -9,12 +9,10 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Controladores de visibilidad de contraseña
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Limpiar campos cada vez que el modal se abre o se cierra
   useEffect(() => {
     if (isOpen) {
       setCurrentPassword('');

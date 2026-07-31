@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import PlaceholderPage from './components/PlaceholderPage';
 import Nosotros from './pages/Nosotros';
@@ -19,9 +20,18 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import Propiedades from './pages/Propiedades';
 import PropertyDetail from './pages/PropertyDetail';
+import Contacto from './pages/Contacto';
+import socket from './socket';
 
 const App = () => {
-  const { initializing, isAuthenticated, role } = useAuth();
+  const { initializing, isAuthenticated, role, user } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated && user?._id) {
+      socket.emit('auth:join', { userId: user._id, role: role || user.role || user.rol });
+      console.log('Socket emitted auth:join for user:', user._id);
+    }
+  }, [isAuthenticated, user, role]);
 
   if (initializing) {
     return null;
@@ -45,16 +55,7 @@ const App = () => {
         <Route path="/propiedades" element={<Propiedades />} />
         <Route path="/propiedades/:id" element={<PropertyDetail />} />
         <Route path="/nosotros" element={<Nosotros />} />
-        <Route
-          path="/contacto"
-          element={
-            <PlaceholderPage
-              subtitle="Contacto"
-              title="Comunicación directa"
-              
-            />
-          }
-        />
+        <Route path="/contacto" element={<Contacto />} />
         <Route path="/login" element={<LoginPage />} />
       </Route>
 

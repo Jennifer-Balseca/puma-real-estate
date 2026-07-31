@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import NotificationBell from '../components/NotificationBell';
 
 const adminLinks = [
   { label: 'Dashboard', to: '/admin' },
@@ -29,6 +30,7 @@ const AdminLayout = ({ children }) => {
             <span className="font-caption text-caption uppercase tracking-widest text-zinc-500 mr-2">
               Admin · {user?.email}
             </span>
+            <NotificationBell />
             <button
               type="button"
               onClick={() => setIsChangePasswordOpen(true)}
@@ -45,14 +47,17 @@ const AdminLayout = ({ children }) => {
             </button>
           </div>
 
-          <button
-            type="button"
-            className="rounded-none border border-neutral-800 px-3 py-2 text-primary-container md:hidden"
-            onClick={() => setIsMenuOpen((currentValue) => !currentValue)}
-            aria-label="Abrir menu"
-          >
-            <span className="material-symbols-outlined">menu</span>
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <NotificationBell />
+            <button
+              type="button"
+              className="rounded-none border border-neutral-800 px-3 py-2 text-primary-container"
+              onClick={() => setIsMenuOpen((currentValue) => !currentValue)}
+              aria-label="Abrir menu"
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+          </div>
         </div>
 
         <nav className="hidden border-t border-neutral-800 bg-black px-6 py-3 md:block">
