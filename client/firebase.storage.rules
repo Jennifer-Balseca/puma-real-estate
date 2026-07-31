@@ -3,8 +3,8 @@ service firebase.storage {
   match /b/{bucket}/o {
     match /properties/{propertyId}/{allPaths=**} {
       allow read: if true;
-      allow write: if request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*|video/mp4');
+      allow write: if request.resource.size < 40 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|video/.*');
     }
 
     match /{allPaths=**} {

@@ -10,7 +10,8 @@ const visitService = {
   addFollowUpNote: (id, note) => api.post(`/api/visits/${id}/notes`, { note }).then((r) => r.data),
   updateStatus: (id, status) => api.patch(`/api/visits/${id}/status`, { status }).then((r) => r.data),
   updatePropertyStatus: (id, status) => api.patch(`/api/visits/${id}/property-status`, { status }).then((r) => r.data),
-  listAgents: () => api.get('/api/admin/agents').then((r) => r.data),
+  listAgents: (params = {}) => api.get('/api/admin/agents', { params }).then((r) => r.data),
+  getDashboardStats: (params = {}) => api.get('/api/admin/dashboard-stats', { params }).then((r) => r.data),
 };
 
 export default visitService;

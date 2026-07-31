@@ -444,6 +444,19 @@ const addPropertyMedia = async (req, res) => {
             return res.status(400).json({ message: 'La URL del archivo multimedia no es válida.' });
         }
 
+        const allowedExtensions = /\.(jpg|jpeg|png|webp|mp4|webm|mov)(\?.*)?$/i;
+        if (!allowedExtensions.test(mediaUrl)) {
+            return res.status(400).json({ message: 'El archivo multimedia debe ser una imagen (JPG/PNG/WEBP) o un video (MP4/WEBM/MOV) válido.' });
+        }
+
+        const allowedHosts = [
+            'firebasestorage.googleapis.com',
+            'storage.googleapis.com'
+        ];
+        if (!allowedHosts.includes(parsedUrl.hostname)) {
+            return res.status(400).json({ message: 'La procedencia del archivo multimedia no está permitida.' });
+        }
+
         const currentMedia = Array.isArray(property.mediaUrls) ? property.mediaUrls : [];
         const currentImages = Array.isArray(property.imagenes) ? property.imagenes : [];
         const currentPaths = Array.isArray(property.storagePaths) ? property.storagePaths : [];

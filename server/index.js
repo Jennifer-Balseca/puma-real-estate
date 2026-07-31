@@ -71,10 +71,25 @@ const iniciarServidor = async () => {
             app.set('io', io);
 
             io.on('connection', (socket) => {
-                console.log('Socket conectado:', socket.id);
+                socket.on('auth:join', (data) => {
+                    if (data?.userId) {
+                        socket.join(data.userId);
+                        socket.join(`user:${data.userId}`);
+                        const role = String(data.role || '').toLowerCase();
+                        if (role === 'admin' || role === 'administrador') {
+                            socket.join('admin');
+                        } else if (role === 'agent' || role === 'agente') {
+                            socket.join('agent');
+                        }
+                    }
+                });
                 socket.on('disconnect', () => {
                 });
             });
+
+            // Inicializar cron de recordatorios
+            const { initReminderCron } = require('./services/reminderCron');
+            initReminderCron(io);
 
             server.listen(PORT, () => {
                 console.log(`✅ Servidor encendido en http://localhost:${PORT}`);

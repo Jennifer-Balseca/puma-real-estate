@@ -12,32 +12,26 @@ const statusLabels = {
 
 const matchesTab = (visit, tab) => {
   if (!visit) return false;
-
-  if (tab === 'finished') {
-    return visit.status === 'finished';
-  }
-
-  if (tab === 'cancelled') {
-    return visit.status === 'cancelled';
-  }
-
-  return ['pending', 'in-process'].includes(visit.status);
+  return visit.status === tab;
 };
 
 const AdminVisitRequests = () => {
-  const [activeTab, setActiveTab] = useState('requests');
+  const [activeTab, setActiveTab] = useState('pending');
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [error, setError] = useState('');
 
   const load = async () => {
     try {
       setLoading(true);
+      setError('');
       const data = await visitService.listVisits({ tab: activeTab });
       setVisits(data?.visits ?? data ?? []);
     } catch (err) {
       console.error(err);
+      setError(err.response?.data?.message ?? 'No se pudieron cargar las solicitudes de visita.');
     } finally {
       setLoading(false);
     }
@@ -90,6 +84,7 @@ const AdminVisitRequests = () => {
       await load();
     } catch (err) {
       console.error(err);
+      alert(err.response?.data?.message || 'Error al actualizar el estado de la visita.');
     }
   };
 
@@ -115,10 +110,19 @@ const AdminVisitRequests = () => {
           <p className="font-caption text-outline uppercase tracking-widest">Gestión de Visitas de Lujo</p>
         </div>
 
+        {error && (
+          <div className="mb-6 border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-6 border-b border-neutral-900 pb-4">
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setActiveTab('requests')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'requests' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
-              Solicitudes
+          <div className="flex items-center gap-2 flex-wrap">
+            <button type="button" onClick={() => setActiveTab('pending')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'pending' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              Pendientes
+            </button>
+            <button type="button" onClick={() => setActiveTab('in-process')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'in-process' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
+              En proceso
             </button>
             <button type="button" onClick={() => setActiveTab('finished')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'finished' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
               Finalizadas
@@ -170,7 +174,13 @@ const AdminVisitRequests = () => {
               <div className="ml-6 flex items-center gap-3">
                 <div className="text-right mr-4">
                   <div className="text-sm text-neutral-400">{v.assignedAgent ? (v.assignedAgent.nombre ?? v.assignedAgent.name) : <span className="text-sm text-gray-400">Sin asignar</span>}</div>
-                  <div className="mt-1 inline-block px-2 py-1 rounded bg-gray-800 text-xs">{statusLabels[v.status] ?? v.status}</div>
+                  {(() => {
+                    const isExpired = new Date(v.preferredDate) < new Date() && v.status !== 'finished' && v.status !== 'cancelled';
+                    if (isExpired) {
+                      return <div className="mt-1 inline-block px-2 py-1 rounded bg-red-950/80 border border-red-700/50 text-red-400 text-xs font-semibold">Vencida</div>;
+                    }
+                    return <div className="mt-1 inline-block px-2 py-1 rounded bg-gray-800 text-xs">{statusLabels[v.status] ?? v.status}</div>;
+                  })()}
                 </div>
 
                 <div className="flex flex-col gap-2">

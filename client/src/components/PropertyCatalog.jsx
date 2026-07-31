@@ -295,10 +295,20 @@ const PropertyCatalog = ({ mode = 'public' }) => {
     );
   };
 
+  const isVideoUrl = (url) => /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url || '');
+
   const visibleProperties = useMemo(() => {
     if (mode === 'public') return filterByStatus(allProperties, 'Disponible');
     return filterByStatus(allProperties, activeStatusTab);
   }, [allProperties, activeStatusTab, mode]);
+
+  const visibleOtherProperties = useMemo(() => {
+    if (mode !== 'agent') {
+      return visibleProperties;
+    }
+
+    return visibleProperties.filter((property) => !canManageProperty(property));
+  }, [visibleProperties, mode, currentUserId, isAdmin, isAgent]);
 
   const visibleMyProperties = useMemo(() => {
     if (mode !== 'agent') return [];
@@ -388,7 +398,11 @@ const PropertyCatalog = ({ mode = 'public' }) => {
                 ‹
               </button>
 
-              <img loading="lazy" src={modalImages[modalIndex]} alt={`Imagen ${modalIndex + 1}`} className="max-h-[70vh] w-auto object-contain" />
+              {isVideoUrl(modalImages[modalIndex]) ? (
+                <video src={modalImages[modalIndex]} controls className="max-h-[70vh] w-auto object-contain" />
+              ) : (
+                <img loading="lazy" src={modalImages[modalIndex]} alt={`Imagen ${modalIndex + 1}`} className="max-h-[70vh] w-auto object-contain" />
+              )}
 
               <button
                 type="button"
@@ -408,7 +422,11 @@ const PropertyCatalog = ({ mode = 'public' }) => {
                       onClick={() => setModalIndex(idx)}
                       className="h-20 w-full overflow-hidden rounded bg-neutral-900"
                     >
-                      <img loading="lazy" src={img} alt={`Thumb ${idx + 1}`} className="h-full w-full object-cover" />
+                      {isVideoUrl(img) ? (
+                        <video src={img} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                      ) : (
+                        <img loading="lazy" src={img} alt={`Thumb ${idx + 1}`} className="h-full w-full object-cover" />
+                      )}
                     </button>
 
                     {modalProperty && canManageProperty(modalProperty) ? (
@@ -451,9 +469,9 @@ const PropertyCatalog = ({ mode = 'public' }) => {
                   </div>
                 </div>
 
-                {visibleProperties.length > 0 ? (
+                {visibleOtherProperties.length > 0 ? (
                   <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-                    {visibleProperties.map((property) => renderCard(property, false))}
+                    {visibleOtherProperties.map((property) => renderCard(property, false))}
                   </div>
                 ) : (
                   <div className="border border-neutral-800 bg-black/80 p-6 text-sm text-[#C0C0C0]">No hay propiedades en este estado.</div>

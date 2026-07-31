@@ -89,7 +89,38 @@ const me = async (req, res) => {
     }
 };
 
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Ambas contraseñas son obligatorias.' });
+        }
+
+        const user = await User.findById(req.user.id).select('+password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Contraseña actual incorrecta.' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        return res.status(200).json({ message: 'Contraseña actualizada correctamente.' });
+    } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
+        return res.status(500).json({ message: 'Error interno del servidor al cambiar la contraseña.' });
+    }
+};
+
 module.exports = {
     login,
-    me
+    me,
+    changePassword
 };

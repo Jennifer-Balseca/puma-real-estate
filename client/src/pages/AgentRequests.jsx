@@ -20,6 +20,8 @@ const AgentRequests = () => {
   const [selected, setSelected] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  const [error, setError] = useState('');
+
   const loadQueue = async () => {
     try {
       setLoadingQueue(true);
@@ -60,10 +62,14 @@ const AgentRequests = () => {
 
   const handleAccept = async (visitId) => {
     try {
+      setError('');
       await visitService.acceptVisit(visitId);
       setQueue((prev) => prev.filter((v) => v._id !== visitId));
       navigate('/agente/agenda');
-    } catch (err) { console.error('accept error', err); }
+    } catch (err) {
+      console.error('accept error', err);
+      setError(err.response?.data?.message || 'No se pudo aceptar la visita.');
+    }
   };
 
   return (
@@ -73,6 +79,12 @@ const AgentRequests = () => {
           <h1 className="font-h1 text-3xl text-on-surface mb-1">Solicitudes de visita</h1>
           <p className="font-caption text-outline uppercase tracking-widest">Solicitudes disponibles para agentes</p>
         </div>
+
+        {error && (
+          <div className="mb-6 rounded border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-4">
           {loadingQueue && <div className="text-center text-neutral-400">Cargando solicitudes...</div>}
@@ -111,7 +123,13 @@ const AgentRequests = () => {
               <div className="ml-6 flex items-center gap-3">
                 <div className="text-right mr-4">
                   <div className="text-sm text-neutral-400">{v.assignedAgent ? (v.assignedAgent.name ?? v.assignedAgent.nombre) : <span className="text-sm text-gray-400">Sin asignar</span>}</div>
-                  <div className="mt-1 inline-block px-2 py-1 rounded bg-gray-800 text-xs">{statusLabels[v.status] ?? v.status}</div>
+                  {(() => {
+                    const isExpired = new Date(v.preferredDate) < new Date() && v.status !== 'finished' && v.status !== 'cancelled';
+                    if (isExpired) {
+                      return <div className="mt-1 inline-block px-2 py-1 rounded bg-red-950/80 border border-red-700/50 text-red-400 text-xs font-semibold">Vencida</div>;
+                    }
+                    return <div className="mt-1 inline-block px-2 py-1 rounded bg-gray-800 text-xs">{statusLabels[v.status] ?? v.status}</div>;
+                  })()}
                 </div>
 
                 <div className="flex flex-col gap-2">

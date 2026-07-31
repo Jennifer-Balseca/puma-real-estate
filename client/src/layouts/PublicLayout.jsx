@@ -44,12 +44,12 @@ const PublicLayout = ({ children }) => {
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
-            <a
-              href="/contacto"
+            <Link
+              to="/contacto"
               className="bg-primary-container text-on-primary-container px-6 py-2 text-xs font-h1 tracking-widest uppercase"
             >
               Contactar
-            </a>
+            </Link>
             <Link
               to="/login"
               className="border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.2em] text-on-surface-variant"
@@ -78,13 +78,13 @@ const PublicLayout = ({ children }) => {
               ))}
 
               <div className="mt-2 flex flex-col gap-3 border-t border-neutral-800 pt-4">
-                <a
-                  href="/contacto"
+                <Link
+                  to="/contacto"
                   onClick={() => setIsMenuOpen(false)}
                   className="w-full text-center bg-primary-container text-on-primary-container px-4 py-3 text-sm font-h1 uppercase tracking-widest"
                 >
                   Contactar
-                </a>
+                </Link>
 
                 <Link
                   to="/login"

@@ -61,6 +61,30 @@ const populateAppointment = async (appointmentId) => {
     .populate('agenteResponsable', 'name email status');
 };
 
+const checkAgentScheduleConflict = async (agentId, dateStr, timeSlot, excludeVisitId = null) => {
+  if (!agentId || !dateStr || !timeSlot) return false;
+
+  const targetDate = new Date(dateStr);
+  const startOfDay = new Date(targetDate);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const endOfDay = new Date(targetDate);
+  endOfDay.setUTCHours(23, 59, 59, 999);
+
+  const query = {
+    assignedAgentId: agentId,
+    status: 'in-process',
+    preferredDate: { $gte: startOfDay, $lte: endOfDay },
+    timeSlot: timeSlot
+  };
+
+  if (excludeVisitId) {
+    query._id = { $ne: excludeVisitId };
+  }
+
+  const existingConflict = await VisitRequest.findOne(query);
+  return !!existingConflict;
+};
+
 const syncAppointmentForVisit = async (visit, nextStatus) => {
   if (!visit) {
     return null;
@@ -140,6 +164,18 @@ const createVisitRequest = async (req, res) => {
       return res.status(200).json({ visit: normalizeVisitResponse(existingRequest), duplicated: true });
     }
 
+    // Validar duplicación de solicitudes activas para la misma propiedad y correo
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const activeDuplicate = await VisitRequest.findOne({
+      email: normalizedEmail,
+      propertyId: propertyId,
+      status: { $in: ['pending', 'in-process'] }
+    });
+
+    if (activeDuplicate) {
+      return res.status(400).json({ message: 'Ya tienes una solicitud de visita activa y bajo revisión para esta propiedad.' });
+    }
+
     // 2. Buscar propiedad y validar existencia y disponibilidad 
     const property = await Property.findById(propertyId);
     if (!property) return res.status(404).json({ message: 'Propiedad no encontrada.' });
@@ -169,7 +205,21 @@ const createVisitRequest = async (req, res) => {
     const payloadVisit = normalizeVisitResponse(populated) || visit;
 
     const io = req.app && req.app.get && req.app.get('io');
-    if (io) io.emit('visit:created', { visit: payloadVisit });
+    if (io) {
+      io.emit('visit:created', { visit: payloadVisit });
+      
+      const notification = {
+        _id: `new-visit-${visit._id}-${Date.now()}`,
+        title: 'Nueva solicitud de visita sin asignar',
+        message: `Cliente: ${visit.fullName} para la propiedad "${populated.propertyId?.titulo || 'Propiedad'}".`,
+        type: 'pending',
+        visitId: visit._id,
+        read: false,
+        createdAt: new Date()
+      };
+      io.to('admin').emit('notification:new', notification);
+      io.to('agent').emit('notification:new', notification);
+    }
 
     return res.status(201).json({ visit: payloadVisit });
   } catch (err) {
@@ -186,6 +236,10 @@ const listVisitRequests = async (req, res) => {
       q.status = 'finished';
     } else if (tab === 'cancelled') {
       q.status = 'cancelled';
+    } else if (tab === 'pending') {
+      q.status = 'pending';
+    } else if (tab === 'in-process') {
+      q.status = 'in-process';
     } else if (tab === 'requests') {
       q.status = { $in: ['pending', 'in-process'] };
     } else if (status) {
@@ -249,7 +303,16 @@ const assignAgent = async (req, res) => {
     const agent = await User.findById(agentId);
     if (!agent) return res.status(404).json({ message: 'Agente no encontrado.' });
 
+    // Validar conflicto de agenda
+    const hasConflict = await checkAgentScheduleConflict(agentId, visit.preferredDate, visit.timeSlot, visit._id);
+    if (hasConflict) {
+      return res.status(409).json({ message: 'El agente ya tiene otra visita agendada a esa misma hora.' });
+    }
+
     visit.assignedAgentId = agentId;
+    if (visit.status === 'pending') {
+      visit.status = 'in-process';
+    }
     await visit.save();
 
     const populatedVisit = await VisitRequest.findById(visit._id)
@@ -270,7 +333,21 @@ const assignAgent = async (req, res) => {
     }) : visit;
 
     const io = req.app && req.app.get && req.app.get('io');
-    if (io) io.emit('visit:assigned', { visit: payloadVisit });
+    if (io) {
+      io.emit('visit:assigned', { visit: payloadVisit });
+
+      const notification = {
+        _id: `assign-visit-${visit._id}-${Date.now()}`,
+        title: 'Se te ha asignado una nueva visita',
+        message: `Se te ha asignado la visita de ${visit.fullName} para la propiedad "${populatedVisit.propertyId?.titulo || 'Propiedad'}".`,
+        type: 'assigned',
+        visitId: visit._id,
+        read: false,
+        createdAt: new Date()
+      };
+      io.to(`user:${agentId}`).emit('notification:new', notification);
+      io.to('admin').emit('notification:new', notification);
+    }
 
     return res.json({ visit: payloadVisit });
   } catch (err) {
@@ -301,6 +378,12 @@ const agentAccept = async (req, res) => {
       return res.status(403).json({ message: 'Solicitud ya asignada a otro agente.' });
     }
 
+    // Validar conflicto de agenda
+    const hasConflict = await checkAgentScheduleConflict(agentId, visit.preferredDate, visit.timeSlot, visit._id);
+    if (hasConflict) {
+      return res.status(409).json({ message: 'Ya tienes otra visita agendada a esta misma hora.' });
+    }
+
     visit.assignedAgentId = agentId;
     visit.status = 'in-process';
     await visit.save();
@@ -316,6 +399,18 @@ const agentAccept = async (req, res) => {
     if (io) {
       io.emit('visit:accepted', { visit: payloadVisit });
       if (appointment) io.emit('appointment:created', { appointment });
+
+      const notification = {
+        _id: `accept-visit-${visit._id}-${Date.now()}`,
+        title: 'Se te ha asignado una nueva visita',
+        message: `Has tomado la visita de ${visit.fullName} para la propiedad "${populated.propertyId?.titulo || 'Propiedad'}".`,
+        type: 'assigned',
+        visitId: visit._id,
+        read: false,
+        createdAt: new Date()
+      };
+      io.to(`user:${agentId}`).emit('notification:new', notification);
+      io.to('admin').emit('notification:new', notification);
     }
 
     return res.json({ visit: payloadVisit });
@@ -353,6 +448,17 @@ const updateVisitStatus = async (req, res) => {
 
     if (role !== 'admin' && (!visit.assignedAgentId || String(visit.assignedAgentId) !== String(currentUserId))) {
       return res.status(403).json({ message: 'No tienes permisos para cambiar el estado.' });
+    }
+
+    if (status === 'in-process' && !visit.assignedAgentId) {
+      return res.status(400).json({ message: 'No se puede cambiar el estado a "En proceso" sin asignar un agente primero.' });
+    }
+
+    if (status === 'in-process' && visit.assignedAgentId) {
+      const hasConflict = await checkAgentScheduleConflict(visit.assignedAgentId, visit.preferredDate, visit.timeSlot, visit._id);
+      if (hasConflict) {
+        return res.status(409).json({ message: 'El agente ya tiene otra visita agendada a esa misma hora.' });
+      }
     }
 
     visit.status = status;

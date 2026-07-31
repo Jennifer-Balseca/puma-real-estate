@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ChangePasswordModal from '../components/ChangePasswordModal';
+import NotificationBell from '../components/NotificationBell';
 
 const adminLinks = [
   { label: 'Dashboard', to: '/admin' },
@@ -12,6 +14,7 @@ const adminLinks = [
 
 const AdminLayout = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const { logout, user } = useAuth();
 
   return (
@@ -23,10 +26,18 @@ const AdminLayout = ({ children }) => {
             <span className="font-h1 text-sm font-bold md:text-base">Puma Real Estate</span>
           </Link>
 
-          <div className="hidden items-center gap-4 md:flex">
-            <span className="font-caption text-caption uppercase tracking-widest text-zinc-500">
+          <div className="hidden items-center gap-3 md:flex">
+            <span className="font-caption text-caption uppercase tracking-widest text-zinc-500 mr-2">
               Admin · {user?.email}
             </span>
+            <NotificationBell />
+            <button
+              type="button"
+              onClick={() => setIsChangePasswordOpen(true)}
+              className="h-10 border border-neutral-800 hover:border-primary-container px-4 font-h1 text-xs uppercase tracking-[0.2em] text-neutral-300 transition-colors hover:bg-neutral-900"
+            >
+              Clave
+            </button>
             <button
               type="button"
               onClick={logout}
@@ -36,14 +47,17 @@ const AdminLayout = ({ children }) => {
             </button>
           </div>
 
-          <button
-            type="button"
-            className="rounded-none border border-neutral-800 px-3 py-2 text-primary-container md:hidden"
-            onClick={() => setIsMenuOpen((currentValue) => !currentValue)}
-            aria-label="Abrir menu"
-          >
-            <span className="material-symbols-outlined">menu</span>
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <NotificationBell />
+            <button
+              type="button"
+              className="rounded-none border border-neutral-800 px-3 py-2 text-primary-container"
+              onClick={() => setIsMenuOpen((currentValue) => !currentValue)}
+              aria-label="Abrir menu"
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+          </div>
         </div>
 
         <nav className="hidden border-t border-neutral-800 bg-black px-6 py-3 md:block">
@@ -81,8 +95,18 @@ const AdminLayout = ({ children }) => {
               ))}
               <button
                 type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsChangePasswordOpen(true);
+                }}
+                className="mt-2 h-11 border border-neutral-800 text-neutral-300 px-5 font-h1 text-xs uppercase tracking-[0.2em] transition hover:bg-neutral-900"
+              >
+                Cambiar Clave
+              </button>
+              <button
+                type="button"
                 onClick={logout}
-                className="mt-2 h-11 bg-primary-container px-5 font-h1 text-xs uppercase tracking-[0.2em] text-black transition hover:brightness-110"
+                className="h-11 bg-primary-container px-5 font-h1 text-xs uppercase tracking-[0.2em] text-black transition hover:brightness-110"
               >
                 Logout
               </button>
@@ -103,6 +127,8 @@ const AdminLayout = ({ children }) => {
           </p>
         </div>
       </footer>
+
+      <ChangePasswordModal isOpen={isChangePasswordOpen} onClose={() => setIsChangePasswordOpen(false)} />
     </div>
   );
 };

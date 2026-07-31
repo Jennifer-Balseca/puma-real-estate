@@ -13,6 +13,7 @@ const PropertyCard = ({
   ].filter(Boolean);
 
   const hero = media[0] || '';
+  const isHeroVideo = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(hero);
   const city = property?.ubicacion?.ciudad || 'Sin ciudad';
   const price = Number(property?.precio || 0).toLocaleString('es-EC');
   const propertyLabel = `${property?.tipo || 'Propiedad'} · ${property?.modalidad || 'Venta'}`;
@@ -25,7 +26,18 @@ const PropertyCard = ({
       <CardTag type={onClick ? 'button' : undefined} onClick={onClick} className="block w-full text-left">
         <div className={imageClassName}>
           {hero ? (
-            <img loading="lazy" src={hero} alt={property?.titulo || 'Propiedad'} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            isHeroVideo ? (
+              <video
+                src={hero}
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <img loading="lazy" src={hero} alt={property?.titulo || 'Propiedad'} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            )
           ) : (
             <div className="flex h-full items-center justify-center text-center text-sm text-[#C0C0C0]">Sin imágenes</div>
           )}

@@ -22,15 +22,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-api.interceptors.response.use((response) => {
-  const method = String(response.config?.method ?? '').toLowerCase();
-  const url = String(response.config?.url ?? '');
+api.interceptors.response.use(
+  (response) => {
+    const method = String(response.config?.method ?? '').toLowerCase();
+    const url = String(response.config?.url ?? '');
 
-  if (url.includes('/api/properties') && ['post', 'put', 'delete'].includes(method)) {
-    emitPropertiesRefresh();
+    if (url.includes('/api/properties') && ['post', 'put', 'delete'].includes(method)) {
+      emitPropertiesRefresh();
+    }
+
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      window.localStorage.removeItem('puma-auth');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
   }
-
-  return response;
-});
+);
 
 export default api;

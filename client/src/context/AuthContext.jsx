@@ -22,7 +22,7 @@ const AuthProvider = ({ children }) => {
   const setSession = (session) => {
     const nextUser = session?.user ?? null;
     const nextToken = session?.token ?? null;
-    const nextRole = nextUser?.role ?? null;
+    const nextRole = nextUser?.role ?? nextUser?.rol ?? null;
 
     setUser(nextUser);
     setToken(nextToken);
@@ -60,7 +60,7 @@ const AuthProvider = ({ children }) => {
 
         setToken(parsedAuth.token);
         setUser(parsedAuth.user ?? null);
-        setRole(parsedAuth.role ?? parsedAuth.user?.role ?? null);
+        setRole(parsedAuth.role ?? parsedAuth.user?.role ?? parsedAuth.user?.rol ?? null);
 
         const response = await api.get('/api/auth/me');
         const currentUser = response.data?.user ?? null;
