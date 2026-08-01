@@ -15,11 +15,17 @@ const visitRoutes = require('./routes/visitRequests');
 
 const app = express();
 
+// Orígenes permitidos: localhost (dev) + URL de producción (Vercel) desde env
+const ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : [])
+];
 
 app.use(express.json());
 app.use(
     cors({
-        origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+        origin: ALLOWED_ORIGINS,
         credentials: true
     })
 );
@@ -67,7 +73,7 @@ const iniciarServidor = async () => {
 
         
             const server = http.createServer(app);
-            const io = new Server(server, { cors: { origin: ['http://localhost:5173', 'http://127.0.0.1:5173'] } });
+            const io = new Server(server, { cors: { origin: ALLOWED_ORIGINS } });
             app.set('io', io);
 
             io.on('connection', (socket) => {
