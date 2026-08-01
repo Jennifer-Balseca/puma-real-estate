@@ -22,6 +22,8 @@ const ALLOWED_ORIGINS = [
     ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : [])
 ];
 
+console.log('🔍 ALLOWED_ORIGINS:', ALLOWED_ORIGINS);
+
 app.use(express.json());
 app.use(
     cors({
@@ -69,37 +71,37 @@ const iniciarServidor = async () => {
     try {
         await conectarDB();
 
-            initFirebaseAdmin();
+        initFirebaseAdmin();
 
-        
-            const server = http.createServer(app);
-            const io = new Server(server, { cors: { origin: ALLOWED_ORIGINS } });
-            app.set('io', io);
 
-            io.on('connection', (socket) => {
-                socket.on('auth:join', (data) => {
-                    if (data?.userId) {
-                        socket.join(data.userId);
-                        socket.join(`user:${data.userId}`);
-                        const role = String(data.role || '').toLowerCase();
-                        if (role === 'admin' || role === 'administrador') {
-                            socket.join('admin');
-                        } else if (role === 'agent' || role === 'agente') {
-                            socket.join('agent');
-                        }
+        const server = http.createServer(app);
+        const io = new Server(server, { cors: { origin: ALLOWED_ORIGINS } });
+        app.set('io', io);
+
+        io.on('connection', (socket) => {
+            socket.on('auth:join', (data) => {
+                if (data?.userId) {
+                    socket.join(data.userId);
+                    socket.join(`user:${data.userId}`);
+                    const role = String(data.role || '').toLowerCase();
+                    if (role === 'admin' || role === 'administrador') {
+                        socket.join('admin');
+                    } else if (role === 'agent' || role === 'agente') {
+                        socket.join('agent');
                     }
-                });
-                socket.on('disconnect', () => {
-                });
+                }
             });
-
-            // Inicializar cron de recordatorios
-            const { initReminderCron } = require('./services/reminderCron');
-            initReminderCron(io);
-
-            server.listen(PORT, () => {
-                console.log(`✅ Servidor encendido en http://localhost:${PORT}`);
+            socket.on('disconnect', () => {
             });
+        });
+
+        // Inicializar cron de recordatorios
+        const { initReminderCron } = require('./services/reminderCron');
+        initReminderCron(io);
+
+        server.listen(PORT, () => {
+            console.log(`✅ Servidor encendido en http://localhost:${PORT}`);
+        });
     } catch (error) {
         console.error(`Error al iniciar el backend: ${error.message}`);
         process.exit(1);
