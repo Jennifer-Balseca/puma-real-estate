@@ -401,7 +401,7 @@ const AdminDashboard = () => {
                       value={refDate}
                       max={todayStr}
                       onChange={(e) => setRefDate(e.target.value)}
-                      className="bg-surface-container border border-neutral-800 text-on-surface px-3 py-1.5 text-xs rounded focus:outline-none focus:border-primary tracking-wide text-neutral-200"
+                      className="bg-surface-container border border-neutral-800 text-on-surface px-3 py-1.5 text-xs rounded focus:outline-none focus:border-primary tracking-wide"
                       style={{ colorScheme: 'dark' }}
                     />
                   </div>
@@ -415,7 +415,7 @@ const AdminDashboard = () => {
                       value={startDate}
                       max={endDate || todayStr}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="bg-surface-container border border-neutral-800 text-on-surface px-2 py-1.5 text-xs rounded focus:outline-none focus:border-primary tracking-wide text-neutral-200"
+                      className="bg-surface-container border border-neutral-800 text-on-surface px-2 py-1.5 text-xs rounded focus:outline-none focus:border-primary tracking-wide"
                       style={{ colorScheme: 'dark' }}
                     />
                     <span className="text-xs uppercase tracking-widest text-on-surface font-subtitle">Hasta:</span>
@@ -425,7 +425,7 @@ const AdminDashboard = () => {
                       min={startDate}
                       max={todayStr}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="bg-surface-container border border-neutral-800 text-on-surface px-2 py-1.5 text-xs rounded focus:outline-none focus:border-primary tracking-wide text-neutral-200"
+                      className="bg-surface-container border border-neutral-800 text-on-surface px-2 py-1.5 text-xs rounded focus:outline-none focus:border-primary tracking-wide"
                       style={{ colorScheme: 'dark' }}
                     />
                   </div>
@@ -439,7 +439,7 @@ const AdminDashboard = () => {
                       value={refMonth}
                       max={todayStr.substring(0, 7)}
                       onChange={(e) => setRefMonth(e.target.value)}
-                      className="bg-surface-container border border-neutral-800 text-on-surface px-3 py-1.5 text-xs rounded focus:outline-none focus:border-primary tracking-wide text-neutral-200"
+                      className="bg-surface-container border border-neutral-800 text-on-surface px-3 py-1.5 text-xs rounded focus:outline-none focus:border-primary tracking-wide"
                       style={{ colorScheme: 'dark' }}
                     />
                   </div>

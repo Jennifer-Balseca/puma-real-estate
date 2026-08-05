@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import visitService from '../api/visitService';
 import socket from '../socket';
 import VisitDetailModal from '../components/VisitDetailModal';
+import CustomSelect from '../components/CustomSelect';
 
 const statusLabels = {
   pending: 'Pendiente',
@@ -35,6 +37,14 @@ const matchesTab = (visit, tab, userId) => {
 };
 
 const AgentAgenda = () => {
+  const location = useLocation();
+  const [highlightedVisitId, setHighlightedVisitId] = useState(new URLSearchParams(location.search).get('visitId'));
+
+  useEffect(() => {
+    const vid = new URLSearchParams(location.search).get('visitId');
+    if (vid) setHighlightedVisitId(vid);
+  }, [location.search]);
+
   const { user } = useAuth();
   const [agenda, setAgenda] = useState([]);
   const [loadingAgenda, setLoadingAgenda] = useState(false);
@@ -85,6 +95,30 @@ const AgentAgenda = () => {
     };
   }, [activeTab, user?._id]);
 
+  useEffect(() => {
+    if (highlightedVisitId && agenda.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`visit-${highlightedVisitId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [highlightedVisitId, agenda]);
+
+  useEffect(() => {
+    const handleScroll = (e) => {
+      const vid = e.detail?.visitId;
+      if (vid) {
+        setHighlightedVisitId(vid);
+        setTimeout(() => {
+          const el = document.getElementById(`visit-${vid}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    };
+    window.addEventListener('notification:scroll', handleScroll);
+    return () => window.removeEventListener('notification:scroll', handleScroll);
+  }, []);
+
   const handleChangeStatus = async (visitId, nextStatus) => {
     try {
       if (nextStatus === 'finished') {
@@ -108,6 +142,20 @@ const AgentAgenda = () => {
   };
 
   const rows = useMemo(() => agenda, [agenda]);
+
+  const handleClearHighlight = (vId) => {
+    setHighlightedVisitId(null);
+    if (user?._id) {
+      const storageKey = `puma-notifications-${user._id}`;
+      const stored = window.localStorage.getItem(storageKey);
+      if (stored) {
+        let notifications = JSON.parse(stored);
+        notifications = notifications.filter(n => String(n.visitId) !== String(vId));
+        window.localStorage.setItem(storageKey, JSON.stringify(notifications));
+        window.dispatchEvent(new CustomEvent('notification:deleted', { detail: { visitId: vId } }));
+      }
+    }
+  };
 
   return (
     <div className="pt-6 px-6 pb-12">
@@ -138,9 +186,15 @@ const AgentAgenda = () => {
             <div className="text-center text-neutral-500 py-8">No hay visitas en la agenda</div>
           )}
 
-          {!loadingAgenda && rows.map((v) => (
-            <div key={v._id} className="group flex items-center justify-between bg-[#1A1A1A] border border-transparent hover:border-primary-container/50 transition-all duration-300 p-6">
-              <div className="flex-1 grid grid-cols-4 items-center gap-6">
+          {!loadingAgenda && rows.map((v) => {
+            const isHighlighted = highlightedVisitId === String(v._id);
+            return (
+            <div 
+              key={v._id} 
+              id={`visit-${v._id}`}
+              onClick={() => { if (isHighlighted) handleClearHighlight(v._id); }}
+              className={`group flex flex-col xl:flex-row xl:items-center justify-between bg-[#1A1A1A] transition-all duration-300 p-6 gap-6 ${isHighlighted ? 'border border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3)] animate-[pulse_2s_ease-in-out_infinite]' : 'border border-transparent hover:border-primary-container/50'}`}>
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start xl:items-center gap-6">
                 <div className="col-span-1">
                   <p className="font-caption text-outline text-xs uppercase mb-1">Cliente</p>
                   <p className="font-subtitle text-on-surface">{v.fullName}</p>
@@ -165,7 +219,7 @@ const AgentAgenda = () => {
                 </div>
               </div>
 
-              <div className="ml-6 flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t border-neutral-800 xl:border-0 pt-4 xl:pt-0">
                 <div className="text-right mr-4">
                   <div className="text-sm text-neutral-400">{v.assignedAgent ? (v.assignedAgent.name ?? v.assignedAgent.nombre) : <span className="text-sm text-gray-400">Sin asignar</span>}</div>
                   {(() => {
@@ -180,11 +234,19 @@ const AgentAgenda = () => {
                 <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
                     <button onClick={() => { setSelected(v); setModalOpen(true); }} className="min-w-[160px] h-10 bg-primary-container text-on-primary-container font-subtitle text-sm uppercase tracking-widest hover:brightness-110" disabled={v.status === 'finished' || v.status === 'cancelled'}>Ver detalles</button>
-                    <select value={v.status} onChange={(e) => handleChangeStatus(v._id, e.target.value)} disabled={v.status === 'finished' || v.status === 'cancelled'} className="h-10 bg-surface-container-low border border-neutral-800 text-white px-3 disabled:opacity-50">
-                      <option value="pending">Pendiente</option>
-                      <option value="in-process">En proceso</option>
-                      <option value="finished">Finalizado</option>
-                    </select>
+                    <div className="w-32">
+                      <CustomSelect 
+                        value={v.status} 
+                        onChange={(e) => handleChangeStatus(v._id, e.target.value)} 
+                        disabled={v.status === 'finished' || v.status === 'cancelled'} 
+                        className="h-10 text-xs px-3"
+                        options={[
+                          { value: 'pending', label: 'Pendiente' },
+                          { value: 'in-process', label: 'En proceso' },
+                          { value: 'finished', label: 'Finalizado' }
+                        ]}
+                      />
+                    </div>
                     {v.status !== 'finished' && v.status !== 'cancelled' && (
                       <button onClick={() => handleCancelVisit(v._id)} className="h-10 border border-red-500 text-red-300 px-3 text-sm">
                         Cancelar
@@ -194,7 +256,8 @@ const AgentAgenda = () => {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {modalOpen && selected && (

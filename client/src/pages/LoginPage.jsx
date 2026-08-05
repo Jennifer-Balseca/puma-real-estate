@@ -94,7 +94,7 @@ const LoginPage = () => {
       </div>
 
       <main className="relative z-10 w-full flex items-center justify-center px-6 py-16 md:py-24">
-        <section className="relative w-full max-w-[460px] bg-[#121212]/95 border border-neutral-800 p-8 md:p-10 shadow-2xl shadow-black/80 rounded-none border-l-4 border-l-primary-container">
+        <section className="relative w-full max-w-[460px] bg-white/5 backdrop-blur-xl border border-white/20 p-8 md:p-10 shadow-[0_8px_32px_rgba(229,193,88,0.25)] rounded-2xl border-t border-t-white/40">
           
           <div className="mb-8 flex flex-col items-center md:items-start md:text-left">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-none border border-primary-container md:hidden">
@@ -121,7 +121,7 @@ const LoginPage = () => {
                   placeholder="nombre@ejemplo.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] pl-12 pr-4 text-on-surface outline-none transition-all placeholder:text-neutral-600 focus:border-primary-container focus:ring-0 rounded-none"
+                  className="h-12 w-full border border-white/20 bg-white/10 pl-12 pr-4 text-white outline-none transition-all placeholder:text-neutral-400 focus:border-[#E5C158] focus:bg-white/20 focus:shadow-[0_0_15px_rgba(229,193,88,0.3)] rounded-lg"
                 />
               </div>
             </div>
@@ -140,7 +140,7 @@ const LoginPage = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] pl-12 pr-12 text-on-surface outline-none transition-all placeholder:text-neutral-600 focus:border-primary-container focus:ring-0 rounded-none"
+                  className="h-12 w-full border border-white/20 bg-white/10 pl-12 pr-12 text-white outline-none transition-all placeholder:text-neutral-400 focus:border-[#E5C158] focus:bg-white/20 focus:shadow-[0_0_15px_rgba(229,193,88,0.3)] rounded-lg"
                 />
                 <button
                   type="button"
@@ -171,7 +171,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="h-[52px] w-full bg-primary-container hover:bg-white hover:text-black font-subtitle text-xs uppercase tracking-widest text-black transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 shadow-lg shadow-primary-container/10 rounded-none"
+              className="h-[52px] w-full bg-primary-container hover:bg-[#E5C158] hover:shadow-[0_0_20px_rgba(229,193,88,0.6)] font-subtitle text-xs uppercase tracking-widest text-black transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 shadow-lg rounded-lg"
             >
               {loading ? 'Conectando...' : 'Iniciar sesión'}
             </button>

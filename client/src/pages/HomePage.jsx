@@ -164,9 +164,14 @@ const HomePage = () => {
           <h2 className="font-h1 text-5xl text-white mb-8">Comienza tu viaje hacia la excelencia.</h2>
           <p className="text-neutral-400 font-body text-lg mb-12">Nuestros expertos arquitectos y asesores de inversión están listos para guiarte en cada paso del proceso.</p>
           <div className="flex flex-col md:flex-row justify-center gap-6">
-            <button className="bg-primary-container text-on-primary-container px-12 py-5 font-subtitle uppercase tracking-widest text-sm hover:bg-primary transition-all active:scale-95">
+            <a 
+              href="https://wa.me/593995807571" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-primary-container text-on-primary-container px-12 py-5 font-subtitle uppercase tracking-widest text-sm hover:bg-primary transition-all active:scale-95 inline-block"
+            >
               Contáctanos
-            </button>
+            </a>
 
           </div>
         </div>

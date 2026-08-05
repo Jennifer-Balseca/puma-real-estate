@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import PropertyCard from './PropertyCard';
+import CustomSelect from './CustomSelect';
 import { useAuth } from '../context/AuthContext';
 import usePropertiesRefresh from '../hooks/usePropertiesRefresh';
 
@@ -232,18 +233,15 @@ const PropertyCatalog = ({ mode = 'public' }) => {
           <label htmlFor={`state-${property._id}`} className="text-xs uppercase tracking-[0.18em] text-[#D4AF37]">
             Estado
           </label>
-          <select
-            id={`state-${property._id}`}
-            value={nextStateByProperty[property._id] || property.estado || 'Disponible'}
-            onChange={(event) => handleStateChange(property._id, event.target.value)}
-            className="h-11 min-w-0 flex-1 border border-neutral-800 bg-[#1A1A1A] px-3 text-sm text-white outline-none focus:border-[#D4AF37]"
-          >
-            {propertyStates.map((state) => (
-              <option key={state} value={state}>
-                {state}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1 min-w-0">
+            <CustomSelect
+              id={`state-${property._id}`}
+              value={nextStateByProperty[property._id] || property.estado || 'Disponible'}
+              onChange={(e) => handleStateChange(property._id, e.target.value)}
+              className="h-11 border-neutral-800 text-sm px-3"
+              options={propertyStates.map((state) => ({ value: state, label: state }))}
+            />
+          </div>
           <button
             type="button"
             onClick={() => handleUpdateState(property)}
@@ -352,16 +350,16 @@ const PropertyCatalog = ({ mode = 'public' }) => {
       )}
 
       {mode !== 'public' ? (
-        <div className="mb-8 flex flex-wrap items-center gap-3 border-b border-neutral-800 pb-4">
+        <div className="mb-8 flex flex-wrap items-center gap-3 border-b border-white/10 pb-4">
           {['Disponible', 'Alquilada', 'Vendida'].map((status) => (
             <button
               key={status}
               type="button"
               onClick={() => setActiveStatusTab(status)}
-              className={`border px-4 py-2 text-xs uppercase tracking-[0.22em] transition ${
+              className={`border px-4 py-2 text-xs uppercase tracking-[0.22em] transition-all duration-300 ${
                 activeStatusTab === status
-                  ? 'border-[#D4AF37] bg-[#D4AF37] text-black'
-                  : 'border-neutral-700 text-[#C0C0C0] hover:border-[#D4AF37] hover:text-[#D4AF37]'
+                  ? 'border-[#D4AF37] bg-[#D4AF37] text-black shadow-[0_0_15px_rgba(212,175,55,0.4)]'
+                  : 'border-white/10 bg-white/5 backdrop-blur-sm text-[#C0C0C0] hover:border-[#D4AF37]/50 hover:text-[#D4AF37]'
               }`}
             >
               {status}
@@ -462,10 +460,25 @@ const PropertyCatalog = ({ mode = 'public' }) => {
           {mode === 'agent' ? (
             <>
               <section className="space-y-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]">Mi inventario</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">Mis propiedades gestionadas</h2>
+                </div>
+
+                {visibleMyProperties.length > 0 ? (
+                  <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+                    {visibleMyProperties.map((property) => renderCard(property, true))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-white/10 bg-white/10 backdrop-blur-md p-6 text-sm text-[#C0C0C0] text-center">No tienes propiedades en este estado.</div>
+                )}
+              </section>
+
+              <section className="space-y-4 pt-6">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]">Propiedades</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">Todas las propiedades</h2>
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]">Otras propiedades</p>
+                    <h2 className="mt-2 text-2xl font-semibold text-white">Catálogo general</h2>
                   </div>
                 </div>
 
@@ -474,22 +487,7 @@ const PropertyCatalog = ({ mode = 'public' }) => {
                     {visibleOtherProperties.map((property) => renderCard(property, false))}
                   </div>
                 ) : (
-                  <div className="border border-neutral-800 bg-black/80 p-6 text-sm text-[#C0C0C0]">No hay propiedades en este estado.</div>
-                )}
-              </section>
-
-              <section className="space-y-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]">Mis propiedades</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">Propiedades que te pertenecen</h2>
-                </div>
-
-                {visibleMyProperties.length > 0 ? (
-                  <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-                    {visibleMyProperties.map((property) => renderCard(property, true))}
-                  </div>
-                ) : (
-                  <div className="border border-neutral-800 bg-black/80 p-6 text-sm text-[#C0C0C0]">No tienes propiedades en este estado.</div>
+                  <div className="rounded-lg border border-white/10 bg-white/10 backdrop-blur-md p-6 text-sm text-[#C0C0C0] text-center">No hay propiedades en este estado.</div>
                 )}
               </section>
             </>
@@ -500,7 +498,7 @@ const PropertyCatalog = ({ mode = 'public' }) => {
               </div>
 
               {visibleProperties.length === 0 ? (
-                <div className="border border-neutral-800 bg-black/80 p-6 text-sm text-[#C0C0C0]">No hay propiedades disponibles.</div>
+                <div className="rounded-lg border border-white/10 bg-white/10 backdrop-blur-md p-6 text-sm text-[#C0C0C0] text-center">No hay propiedades en este estado.</div>
               ) : null}
             </section>
           )}

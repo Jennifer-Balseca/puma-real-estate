@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import visitService from '../api/visitService';
@@ -13,6 +14,14 @@ const statusLabels = {
 };
 
 const AgentRequests = () => {
+  const location = useLocation();
+  const [highlightedVisitId, setHighlightedVisitId] = useState(new URLSearchParams(location.search).get('visitId'));
+
+  useEffect(() => {
+    const vid = new URLSearchParams(location.search).get('visitId');
+    if (vid) setHighlightedVisitId(vid);
+  }, [location.search]);
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const [queue, setQueue] = useState([]);
@@ -60,6 +69,30 @@ const AgentRequests = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (highlightedVisitId && queue.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`visit-${highlightedVisitId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [highlightedVisitId, queue]);
+
+  useEffect(() => {
+    const handleScroll = (e) => {
+      const vid = e.detail?.visitId;
+      if (vid) {
+        setHighlightedVisitId(vid);
+        setTimeout(() => {
+          const el = document.getElementById(`visit-${vid}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    };
+    window.addEventListener('notification:scroll', handleScroll);
+    return () => window.removeEventListener('notification:scroll', handleScroll);
+  }, []);
+
   const handleAccept = async (visitId) => {
     try {
       setError('');
@@ -69,6 +102,20 @@ const AgentRequests = () => {
     } catch (err) {
       console.error('accept error', err);
       setError(err.response?.data?.message || 'No se pudo aceptar la visita.');
+    }
+  };
+
+  const handleClearHighlight = (vId) => {
+    setHighlightedVisitId(null);
+    if (user?._id) {
+      const storageKey = `puma-notifications-${user._id}`;
+      const stored = window.localStorage.getItem(storageKey);
+      if (stored) {
+        let notifications = JSON.parse(stored);
+        notifications = notifications.filter(n => String(n.visitId) !== String(vId));
+        window.localStorage.setItem(storageKey, JSON.stringify(notifications));
+        window.dispatchEvent(new CustomEvent('notification:deleted', { detail: { visitId: vId } }));
+      }
     }
   };
 
@@ -93,9 +140,15 @@ const AgentRequests = () => {
             <div className="text-center text-neutral-500 py-8">No hay solicitudes disponibles</div>
           )}
 
-          {!loadingQueue && queue.map((v) => (
-            <div key={v._id} className="group flex items-center justify-between bg-[#1A1A1A] border border-transparent hover:border-primary-container/50 transition-all duration-300 p-6">
-              <div className="flex-1 grid grid-cols-4 items-center gap-6">
+          {!loadingQueue && queue.map((v) => {
+            const isHighlighted = highlightedVisitId === String(v._id);
+            return (
+            <div 
+              key={v._id} 
+              id={`visit-${v._id}`}
+              onClick={() => { if (isHighlighted) handleClearHighlight(v._id); }}
+              className={`group flex flex-col xl:flex-row xl:items-center justify-between bg-[#1A1A1A] transition-all duration-300 p-6 gap-6 ${isHighlighted ? 'border border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3)] animate-[pulse_2s_ease-in-out_infinite]' : 'border border-transparent hover:border-primary-container/50'}`}>
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start xl:items-center gap-6">
                 <div className="col-span-1">
                   <p className="font-caption text-outline text-xs uppercase mb-1">Cliente</p>
                   <p className="font-subtitle text-on-surface">{v.fullName}</p>
@@ -120,7 +173,7 @@ const AgentRequests = () => {
                 </div>
               </div>
 
-              <div className="ml-6 flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t border-neutral-800 xl:border-0 pt-4 xl:pt-0">
                 <div className="text-right mr-4">
                   <div className="text-sm text-neutral-400">{v.assignedAgent ? (v.assignedAgent.name ?? v.assignedAgent.nombre) : <span className="text-sm text-gray-400">Sin asignar</span>}</div>
                   {(() => {
@@ -140,7 +193,8 @@ const AgentRequests = () => {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {modalOpen && selected && (

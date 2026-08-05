@@ -68,6 +68,13 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
     setSuccessMessage('');
   };
 
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   const isVideoFile = (file) => String(file?.type || '').startsWith('video/');
 
   const buildStorageObjectName = (file) => {
@@ -278,18 +285,61 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
         <p className="text-sm text-[#C0C0C0]">
           Agrega imágenes JPG/PNG/WEBP (máx. 5 MB) o videos MP4/WEBM/MOV (máx. 40 MB).
         </p>
-        <p className="text-xs text-[#8E8E8E]">
-          El nombre del archivo en Firebase se genera automáticamente usando el título de la propiedad.
-        </p>
+      
       </div>
 
-      <input
-        type="file"
-        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
-        multiple
-        onChange={handleFileChange}
-        className="block w-full text-sm text-[#C0C0C0] file:mr-4 file:h-12 file:border-0 file:bg-[#D4AF37] file:px-4 file:text-sm file:font-semibold file:uppercase file:tracking-[0.2em] file:text-black hover:file:brightness-110"
-      />
+      {/* Vista Desktop (Dropzone) */}
+      <div className="relative hidden md:flex md:flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#D4AF37]/40 bg-white/5 backdrop-blur-sm p-10 text-center transition-all duration-300 hover:border-[#D4AF37] hover:bg-white/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)]">
+        <span className="material-symbols-outlined mb-3 text-4xl text-[#D4AF37]">cloud_upload</span>
+        <h4 className="mb-1 text-sm font-semibold uppercase tracking-[0.1em] text-white">Sube tus archivos multimedia</h4>
+        <p className="mb-5 text-xs text-[#C0C0C0]">Haz clic en el botón inferior para explorar en tu dispositivo</p>
+        <label
+          htmlFor="file-upload-desktop"
+          className="inline-block cursor-pointer border border-[#D4AF37] bg-transparent px-8 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
+        >
+          Elegir archivos
+        </label>
+        <input
+          id="file-upload-desktop"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <span className="mt-4 block text-xs font-medium">
+          {files.length > 0 ? (
+            <span className="text-[#D4AF37]">{files.length} archivo(s) listo(s) para subir</span>
+          ) : (
+            <span className="text-[#777]">Ningún archivo seleccionado aún</span>
+          )}
+        </span>
+      </div>
+
+      {/* Vista Móvil (Botón Redondeado Gris) */}
+      <div className="flex flex-col gap-3 md:hidden">
+        <label
+          htmlFor="file-upload-mobile"
+          className="w-full text-center cursor-pointer rounded-full bg-[#333333] px-6 py-4 text-sm font-semibold uppercase tracking-[0.15em] text-[#E0E0E0] transition hover:bg-[#444] active:bg-[#555]"
+        >
+          Elegir archivos
+        </label>
+        <input
+          id="file-upload-mobile"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <span className="text-sm font-medium text-center">
+          {files.length > 0 ? (
+            <span className="text-[#D4AF37]">{files.length} archivo(s) listo(s)</span>
+          ) : (
+            <span className="text-[#777]">Ningún archivo seleccionado aún</span>
+          )}
+        </span>
+      </div>
 
       {previewFiles.length > 0 ? (
         <div className="space-y-2 border border-neutral-800 p-4">
@@ -320,24 +370,26 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
       {error ? <p className="border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p> : null}
       {successMessage ? <p className="border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{successMessage}</p> : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <button
-          type="button"
-          onClick={handleUpload}
-          disabled={uploading}
-          className="h-12 flex-1 bg-[#D4AF37] px-6 text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {uploading ? 'Subiendo...' : 'Subir archivos'}
-        </button>
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={!uploading}
-          className="h-12 border border-neutral-700 px-6 text-sm uppercase tracking-[0.2em] text-[#C0C0C0] transition hover:border-[#D4AF37] hover:text-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Cancelar
-        </button>
-      </div>
+      {files.length > 0 && (
+        <div className="flex flex-col gap-3 sm:flex-row mt-2">
+          <button
+            type="button"
+            onClick={handleUpload}
+            disabled={uploading}
+            className="flex-1 bg-[#D4AF37] px-6 py-3 md:py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {uploading ? 'Subiendo...' : `Subir ${files.length} archivo(s)`}
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={!uploading}
+            className="border border-neutral-700 px-6 py-3 md:py-4 text-sm uppercase tracking-[0.2em] text-[#C0C0C0] transition hover:border-[#D4AF37] hover:text-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
     </div>
   );
 };

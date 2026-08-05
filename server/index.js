@@ -22,7 +22,6 @@ const ALLOWED_ORIGINS = [
     ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : [])
 ];
 
-console.log('🔍 ALLOWED_ORIGINS:', ALLOWED_ORIGINS);
 
 app.use(express.json());
 app.use(

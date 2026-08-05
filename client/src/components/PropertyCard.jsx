@@ -22,8 +22,8 @@ const PropertyCard = ({
   const CardTag = onClick ? 'button' : 'div';
 
   return (
-    <article className={`group border border-neutral-800 bg-black/80 transition hover:border-[#D4AF37]/50 ${className}`}>
-      <CardTag type={onClick ? 'button' : undefined} onClick={onClick} className="block w-full text-left">
+    <article className={`group border border-white/10 bg-white/10 backdrop-blur-md transition-all duration-500 hover:border-[#E5C158]/50 hover:bg-white/20 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(229,193,88,0.25)] flex flex-col ${className}`}>
+      <CardTag type={onClick ? 'button' : undefined} onClick={onClick} className="block w-full text-left flex-1">
         <div className={imageClassName}>
           {hero ? (
             isHeroVideo ? (
@@ -42,11 +42,11 @@ const PropertyCard = ({
             <div className="flex h-full items-center justify-center text-center text-sm text-[#C0C0C0]">Sin imágenes</div>
           )}
 
-          <div className="absolute left-4 top-4 rounded-sm bg-black/60 border border-neutral-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-[#C0C0C0]">
+          <div className="absolute left-4 top-4 rounded-sm bg-white/20 backdrop-blur-xl border border-white/30 shadow-lg px-3 py-1 text-xs uppercase tracking-[0.18em] text-white font-semibold">
             {badgeLabel || property?.estado || 'Disponible'}
           </div>
 
-          <div className="absolute left-4 bottom-4 bg-black/60 p-3 rounded-md">
+          <div className="absolute left-4 bottom-4 w-[calc(100%-2rem)] bg-black/50 backdrop-blur-xl border border-white/20 p-4 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
             <p className="text-sm text-[#D4AF37]">{propertyLabel}</p>
             <h3 className="mt-1 text-lg font-semibold text-white">{property?.titulo || 'Sin título'}</h3>
           </div>
@@ -82,7 +82,7 @@ const PropertyCard = ({
             {showAmenities && amenities.length > 0 ? (
               <div className="flex flex-wrap gap-2 mt-2">
                 {amenities.slice(0, 3).map((amenidad, index) => (
-                  <span key={`${amenidad}-${index}`} className="text-[10px] uppercase tracking-wider bg-surface-variant text-neutral-300 px-2 py-1 rounded">
+                  <span key={`${amenidad}-${index}`} className="text-[10px] uppercase tracking-wider bg-white/5 border border-white/10 text-neutral-300 px-2 py-1 rounded">
                     {amenidad}
                   </span>
                 ))}
@@ -90,10 +90,9 @@ const PropertyCard = ({
               </div>
             ) : null}
           </div>
-
-          {actions ? <div className="mt-5">{actions}</div> : null}
         </div>
       </CardTag>
+      {actions ? <div className="px-5 pb-5 mt-auto w-full">{actions}</div> : null}
     </article>
   );
 };
