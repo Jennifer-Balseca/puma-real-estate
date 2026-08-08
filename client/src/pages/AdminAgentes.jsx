@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import authService from '../api/authService';
+import CustomSelect from '../components/CustomSelect';
 import RoleGuard from '../components/RoleGuard';
 import socket from '../socket';
 
@@ -61,8 +62,8 @@ const AdminAgentes = () => {
     }
   };
 
-  const loadAgents = async () => {
-    setLoading(true);
+  const loadAgents = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError('');
 
     try {
@@ -74,7 +75,7 @@ const AdminAgentes = () => {
     } catch (requestError) {
       setError(requestError?.response?.data?.message ?? 'No se pudieron cargar los agentes.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -82,7 +83,7 @@ const AdminAgentes = () => {
     void loadAgents();
 
     const handleAgentUpdate = () => {
-      void loadAgents();
+      void loadAgents(true);
     };
 
     socket.on('agent:updated', handleAgentUpdate);
@@ -100,15 +101,21 @@ const AdminAgentes = () => {
     return { total, active, inactive };
   }, [agents]);
 
-  const handleDeactivate = async (agentId) => {
-    setUpdatingId(agentId);
+  const handleToggleStatus = async (agent) => {
+    setUpdatingId(agent._id);
     setError('');
+    const newStatus = (agent.status || agent.estado) === 'Activo' ? 'Inactivo' : 'Activo';
+
+    // Optimistic UI update
+    setAgents(prev => prev.map(a => a._id === agent._id ? { ...a, status: newStatus, estado: newStatus } : a));
 
     try {
-      await api.patch(`/api/admin/users/${agentId}/status`);
-      await loadAgents();
+      await api.patch(`/api/admin/users/${agent._id}`, { status: newStatus });
+      await loadAgents(true);
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? 'No se pudo desactivar el agente.');
+      setError(requestError?.response?.data?.message ?? 'No se pudo actualizar el estado del agente.');
+      // Revert optimistic update on failure
+      void loadAgents(true);
     } finally {
       setUpdatingId('');
     }
@@ -255,12 +262,6 @@ const AdminAgentes = () => {
         ) : (
           <>
             <div className="md:hidden">
-              <div className="grid grid-cols-3 border-b border-neutral-800 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-500">
-                <span>Nombre</span>
-                <span>Email</span>
-                <span className="text-right">Estado</span>
-              </div>
-
               <div className="mt-4 flex flex-col gap-4">
                 {agents.map((agent) => {
                   const status = agent.status || agent.estado || 'Inactivo';
@@ -307,11 +308,11 @@ const AdminAgentes = () => {
 
                           <button
                             type="button"
-                            onClick={() => handleDeactivate(agent._id)}
-                            className={`inline-flex items-center gap-2 border px-3 py-2 text-[10px] uppercase tracking-[0.25em] transition-colors border-neutral-700 text-on-surface hover:border-error hover:text-error ${updatingId === agent._id ? 'opacity-70' : ''}`}
+                            onClick={() => handleToggleStatus(agent)}
+                            className={`inline-flex items-center gap-2 border px-3 py-2 text-[10px] uppercase tracking-[0.25em] transition-colors border-neutral-700 text-on-surface hover:border-${status === 'Activo' ? 'error' : 'primary-container'} hover:text-${status === 'Activo' ? 'error' : 'primary-container'} ${updatingId === agent._id ? 'opacity-70' : ''}`}
                           >
-                            <span className="material-symbols-outlined text-sm">person_off</span>
-                            {updatingId === agent._id ? '...' : 'Estado'}
+                            <span className="material-symbols-outlined text-sm">{status === 'Activo' ? 'person_off' : 'how_to_reg'}</span>
+                            {updatingId === agent._id ? '...' : (status === 'Activo' ? 'Desactivar' : 'Activar')}
                           </button>
                         </div>
                       </div>
@@ -383,11 +384,11 @@ const AdminAgentes = () => {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeactivate(agent._id)}
-                                className={`inline-flex items-center gap-2 border border-neutral-700 px-4 py-2 text-xs uppercase tracking-widest text-on-surface transition-colors hover:border-error hover:text-error ${updatingId === agent._id ? 'opacity-70' : ''}`}
+                                onClick={() => handleToggleStatus(agent)}
+                                className={`inline-flex items-center gap-2 border border-neutral-700 px-4 py-2 text-xs uppercase tracking-widest text-on-surface transition-colors hover:border-${status === 'Activo' ? 'error' : 'primary-container'} hover:text-${status === 'Activo' ? 'error' : 'primary-container'} ${updatingId === agent._id ? 'opacity-70' : ''}`}
                               >
-                                <span className="material-symbols-outlined text-sm">person_off</span>
-                                {updatingId === agent._id ? 'Actualizando...' : 'Desactivar'}
+                                <span className="material-symbols-outlined text-sm">{status === 'Activo' ? 'person_off' : 'how_to_reg'}</span>
+                                {updatingId === agent._id ? 'Actualizando...' : (status === 'Activo' ? 'Desactivar' : 'Activar')}
                               </button>
                             </div>
                           </td>
@@ -427,8 +428,8 @@ const AdminAgentes = () => {
           </button>
 
         {isModalOpen ? (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-4 py-4 backdrop-blur-sm md:items-center">
-            <div className="w-full max-w-2xl border border-neutral-800 bg-surface-container-low shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm md:items-center">
+            <div className="w-full max-w-2xl border border-neutral-800 bg-surface-container-low shadow-2xl overflow-x-hidden overflow-y-auto max-h-[90vh]">
               <div className="flex items-start justify-between border-b border-neutral-900 px-4 py-4 sm:px-6">
                 <div>
                   <p className="font-caption text-caption uppercase tracking-[0.3em] text-neutral-500">
@@ -496,29 +497,33 @@ const AdminAgentes = () => {
 
                   <label className="space-y-2">
                     <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Rol</span>
-                    <select
+                    <CustomSelect
+                      id="role"
                       name="role"
                       value={agentForm.role}
                       onChange={handleFormChange}
-                      className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-on-surface focus:border-primary-container focus:outline-none"
-                    >
-                      <option value="Agente">Agente</option>
-                      <option value="Admin">Admin</option>
-                    </select>
+                      options={[
+                        { value: 'Agente', label: 'Agente' },
+                        { value: 'Admin', label: 'Admin' }
+                      ]}
+                      className="h-12 border-neutral-800"
+                    />
                   </label>
 
                   {modalMode === 'edit' && (
                     <label className="space-y-2 md:col-span-2">
                       <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Estado</span>
-                      <select
+                      <CustomSelect
+                        id="status"
                         name="status"
                         value={agentForm.status}
                         onChange={handleFormChange}
-                        className="h-12 w-full border border-neutral-800 bg-[#1A1A1A] px-4 text-on-surface focus:border-primary-container focus:outline-none"
-                      >
-                        <option value="Activo">Activo</option>
-                        <option value="Inactivo">Inactivo</option>
-                      </select>
+                        options={[
+                          { value: 'Activo', label: 'Activo' },
+                          { value: 'Inactivo', label: 'Inactivo' }
+                        ]}
+                        className="h-12 border-neutral-800"
+                      />
                     </label>
                   )}
                 </div>
@@ -555,7 +560,7 @@ const AdminAgentes = () => {
         {/* MODAL DE RESTABLECER CONTRASEÑA PROVISIONAL */}
         {resetModalOpen && resetAgent ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md border border-neutral-800 bg-[#121212] p-6 shadow-2xl transition-all duration-300">
+            <div className="w-full max-w-md border border-neutral-800 bg-[#121212] p-6 shadow-2xl overflow-x-hidden overflow-y-auto max-h-[90vh]">
               <div className="mb-6 flex items-center justify-between border-b border-neutral-900 pb-3">
                 <h3 className="font-h1 text-sm uppercase tracking-widest text-primary">
                   Restablecer Contraseña

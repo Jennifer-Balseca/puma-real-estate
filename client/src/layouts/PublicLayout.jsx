@@ -11,8 +11,8 @@ const PublicLayout = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background text-on-background">
-      <header className="sticky top-0 z-50 border-b border-neutral-800 bg-black/90 backdrop-blur-xl">
+    <div className="min-h-screen text-on-background flex flex-col">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-lg">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link to="/inicio" className="flex items-center gap-2 uppercase tracking-widest text-primary-container">
             <span className="material-symbols-outlined text-2xl">apartment</span>
@@ -60,7 +60,7 @@ const PublicLayout = ({ children }) => {
         </div>
 
         {isMenuOpen ? (
-          <nav className="border-t border-neutral-800 bg-black px-4 py-4 md:hidden">
+          <nav className="border-t border-white/5 bg-black/80 backdrop-blur-lg px-4 py-4 md:hidden">
             <div className="flex flex-col gap-3">
               {publicLinks.map((link) => (
                 <NavLink
@@ -101,7 +101,7 @@ const PublicLayout = ({ children }) => {
 
       <main>{children ?? <Outlet />}</main>
 
-      <footer className="border-t border-zinc-800 bg-black px-6 py-10 md:py-12">
+      <footer className="border-t border-white/5 bg-black/60 px-6 py-10 md:py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row md:gap-8">
           <div className="text-lg font-semibold text-primary-container">Puma Real Estate.</div>
 

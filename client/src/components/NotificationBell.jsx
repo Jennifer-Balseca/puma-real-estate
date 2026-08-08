@@ -9,9 +9,21 @@ const NotificationBell = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [hasClickedBell, setHasClickedBell] = useState(() => window.sessionStorage.getItem('bellClicked') === 'true');
   const dropdownRef = useRef(null);
 
   const storageKey = user?._id ? `puma-notifications-${user._id}` : null;
+
+  // Escuchar eliminaciones desde otras pantallas
+  useEffect(() => {
+    const handleDeleted = (e) => {
+      const vid = e.detail?.visitId;
+      if (!vid) return;
+      setNotifications((prev) => prev.filter((n) => String(n.visitId) !== String(vid)));
+    };
+    window.addEventListener('notification:deleted', handleDeleted);
+    return () => window.removeEventListener('notification:deleted', handleDeleted);
+  }, []);
 
   // Cargar notificaciones iniciales de localStorage para renderizado rápido
   useEffect(() => {
@@ -47,7 +59,7 @@ const NotificationBell = () => {
             return v.status === 'pending' || v.status === 'in-process';
           } else {
             const agentId = v.assignedAgentId?._id ?? v.assignedAgentId ?? null;
-            return v.status === 'in-process' && agentId && String(agentId) === String(user._id);
+            return v.status === 'pending' || (v.status === 'in-process' && agentId && String(agentId) === String(user._id));
           }
         });
 
@@ -69,9 +81,15 @@ const NotificationBell = () => {
               type = isExpired ? 'reminder' : 'assigned';
             }
           } else {
-            title = isExpired ? 'Visita vencida' : 'Se te ha asignado una nueva visita';
-            message = `Se te ha asignado la visita de ${v.fullName} para la propiedad "${v.propertyId?.titulo || 'Propiedad'}"`;
-            type = isExpired ? 'reminder' : 'assigned';
+            if (v.status === 'pending') {
+              title = 'Nueva solicitud de visita sin asignar';
+              message = `Cliente: ${v.fullName} para la propiedad "${v.propertyId?.titulo || 'Propiedad'}"`;
+              type = 'pending';
+            } else {
+              title = isExpired ? 'Visita vencida' : 'Se te ha asignado una nueva visita';
+              message = `Se te ha asignado la visita de ${v.fullName} para la propiedad "${v.propertyId?.titulo || 'Propiedad'}"`;
+              type = isExpired ? 'reminder' : 'assigned';
+            }
           }
 
           return {
@@ -136,6 +154,8 @@ const NotificationBell = () => {
   // Escuchar por sockets en tiempo real
   useEffect(() => {
     const handleNewNotification = (notification) => {
+      setHasClickedBell(false);
+      window.sessionStorage.setItem('bellClicked', 'false');
       // Evitar notificaciones duplicadas en el cliente por seguridad
       setNotifications((prev) => {
         if (prev.some((n) => n._id === notification._id)) return prev;
@@ -211,6 +231,11 @@ const NotificationBell = () => {
     handleMarkAsRead(notification._id);
     setIsOpen(false);
 
+    // Forzar scroll y resaltado sin importar si la URL es la misma
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('notification:scroll', { detail: { visitId: notification.visitId } }));
+    }, 300);
+
     // Navegación según el rol y tipo de notificación
     const userRole = String(role || user?.role || user?.rol || '').toLowerCase();
     const visitId = notification.visitId;
@@ -224,7 +249,7 @@ const NotificationBell = () => {
     } else {
       // Agente
       if (notification.type === 'reminder') {
-        navigate('/agente/agenda');
+        navigate(`/agente/agenda${visitId ? `?visitId=${visitId}` : ''}`);
       } else if (visitId) {
         navigate(`/agente/solicitudes?visitId=${visitId}`);
       } else {
@@ -244,13 +269,17 @@ const NotificationBell = () => {
       {/* Botón de Campana */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setHasClickedBell(true);
+          window.sessionStorage.setItem('bellClicked', 'true');
+        }}
         className="relative flex h-10 w-10 items-center justify-center border border-neutral-800 bg-neutral-900/40 text-neutral-400 hover:border-primary-container hover:text-primary-container transition-colors rounded-none focus:outline-none"
         aria-label="Notificaciones"
       >
         <span className="material-symbols-outlined text-xl">notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center bg-red-600 text-[10px] font-bold text-white rounded-full animate-pulse">
+          <span className={`absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center bg-red-600 text-[10px] font-bold text-white rounded-full ${!hasClickedBell ? 'animate-[pulse_1s_ease-in-out_infinite]' : ''}`}>
             {unreadCount}
           </span>
         )}

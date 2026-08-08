@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import visitService from '../api/visitService';
 import { useAuth } from '../context/AuthContext';
+import CustomSelect from './CustomSelect';
 import socket from '../socket';
 
 // Modal reutilizable para ver y actualizar una solicitud de visita
@@ -149,8 +150,8 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
   const canEditStatus = currentRole === 'admin' || (assignedId && currentUserId && String(assignedId) === String(currentUserId));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-[#0b0b0b] rounded-lg max-w-3xl w-full mx-4 shadow-lg overflow-auto max-h-[90vh] border border-neutral-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-[#0b0b0b] rounded-lg w-full max-w-3xl shadow-lg overflow-x-hidden overflow-y-auto max-h-[90vh] border border-neutral-800">
         <div className="flex items-center justify-between p-4 border-b border-neutral-900">
           <h3 className="text-lg font-semibold text-on-surface">Detalle de Solicitud</h3>
           <button className="text-neutral-400 hover:text-white" onClick={onClose}>Cerrar</button>
@@ -190,7 +191,7 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
             </div>
           </section>
 
-          <section className="flex items-center justify-between gap-4">
+          <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-on-surface-variant">Estado:</span>
               {(() => {
@@ -202,44 +203,44 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
               })()}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               {canEditStatus && (
-                <select
-                  value={visit.status}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  disabled={statusChanging || isLocked}
-                  className="border rounded px-2 py-1 bg-surface-container-low text-on-surface disabled:opacity-50"
-                >
-                  <option value="pending">Pendiente</option>
-                  <option value="in-process">En proceso</option>
-                  <option value="finished">Finalizado</option>
-                </select>
+                <div className="w-32">
+                  <CustomSelect
+                    value={visit.status}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    disabled={statusChanging || isLocked}
+                    className="h-10 text-xs px-2"
+                    options={[
+                      { value: 'pending', label: 'Pendiente' },
+                      { value: 'in-process', label: 'En proceso' },
+                      { value: 'finished', label: 'Finalizado' }
+                    ]}
+                  />
+                </div>
               )}
 
               {String(role ?? '').toLowerCase() === 'admin' && !isLocked && (
-                <div className="flex items-center">
-                  <select
-                    className="border rounded px-2 py-1 mr-2 bg-surface-container-low text-on-surface"
-                    onChange={(e) => setSelectedAgent(e.target.value)}
-                    value={selectedAgent ?? ''}
-                    disabled={loadingAgents || isLocked}
-                  >
-                    <option value="">Asignar agente...</option>
-                    {agents.map((a) => {
-                      const isCurrentlyAssigned = assignedId && String(assignedId) === String(a._id);
-                      const shouldDisable = a.isBusy && !isCurrentlyAssigned;
-                      return (
-                        <option 
-                          key={a._id} 
-                          value={a._id} 
-                          disabled={shouldDisable}
-                          className={shouldDisable ? "text-neutral-500" : ""}
-                        >
-                          {a.name ?? a.nombre ?? a.email} {shouldDisable ? '(No disponible)' : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
+                <div className="flex items-center w-full sm:w-auto">
+                  <div className="mr-2 flex-1 sm:flex-none sm:w-48">
+                    <CustomSelect
+                      value={selectedAgent ?? ''}
+                      onChange={(e) => setSelectedAgent(e.target.value)}
+                      disabled={loadingAgents || isLocked}
+                      className="h-10 text-xs px-2"
+                      options={[
+                        { value: '', label: 'Asignar agente...' },
+                        ...agents.map((a) => {
+                          const isCurrentlyAssigned = assignedId && String(assignedId) === String(a._id);
+                          const shouldDisable = a.isBusy && !isCurrentlyAssigned;
+                          return {
+                            value: a._id,
+                            label: `${a.name ?? a.nombre ?? a.email} ${shouldDisable ? '(No disponible)' : ''}`,
+                          };
+                        })
+                      ]}
+                    />
+                  </div>
 
                   <button
                     onClick={handleAssign}

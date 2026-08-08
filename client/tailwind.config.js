@@ -4,19 +4,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#000000',
-        surface: '#121414',
-        'surface-container-low': '#1a1c1c',
-        'surface-container': '#1e2020',
-        'surface-container-high': '#282a2b',
-        'surface-variant': '#333535',
-        primary: '#f2ca50',
-        'primary-container': '#D4AF37',
+        background: '#050505', // Casi negro puro, permite destacar degradados
+        surface: '#111212',
+        'surface-container-low': '#161818',
+        'surface-container': '#1a1c1c',
+        'surface-container-high': '#222425',
+        'surface-variant': '#2d2f2f',
+        primary: '#E5C158', // Dorado más brillante y metálico
+        'primary-container': '#D4AF37', // Dorado base
         secondary: '#c6c6c6',
-        'on-background': '#e2e2e2',
-        'on-surface': '#e2e2e2',
-        'on-surface-variant': '#d0c5af',
-        outline: '#99907c',
+        'on-background': '#F0F0F0', // Blanco perla, no cansa la vista
+        'on-surface': '#EBEBEB',
+        'on-surface-variant': '#C8BB9E',
+        outline: '#8A8270',
       },
       spacing: {
         'unit-xs': '4px',

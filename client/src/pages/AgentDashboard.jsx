@@ -41,8 +41,8 @@ const AgentDashboard = () => {
             {dashboardCards.map((card) => {
               const Icon = card.icon;
               return (
-                <button key={card.to} onClick={() => navigate(card.to)} className="group border border-neutral-800 bg-black/80 p-5 text-left hover:border-[#D4AF37]/60 transition-all">
-                  <div className="flex h-12 w-12 items-center justify-center border border-[#D4AF37]/30 text-[#D4AF37] mb-6">
+                <button key={card.to} onClick={() => navigate(card.to)} className="group border border-white/20 bg-white/10 backdrop-blur-md rounded-xl p-6 text-left hover:border-[#E5C158] hover:bg-white/20 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(229,193,88,0.3)] transition-all duration-300">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-white/30 bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.1)] text-[#E5C158] mb-6 group-hover:scale-110 group-hover:text-white group-hover:border-[#E5C158] transition-all duration-300">
                     <Icon size={20} />
                   </div>
                   <h2 className="font-h1 text-xl text-white mb-2">{card.title}</h2>

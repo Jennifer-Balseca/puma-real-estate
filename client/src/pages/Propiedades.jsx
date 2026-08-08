@@ -136,7 +136,7 @@ const Propiedades = () => {
         <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-6">
           <div>
             <h1 className="font-h1 text-4xl mb-2 text-white">Catálogo Exclusivo</h1>
-            <p className="text-neutral-400 max-w-xl">Encuentra las propiedadesarquitectónicas más prestigiosas del mercado actual.</p>
+            <p className="text-neutral-400 max-w-xl">Encuentra las propiedades arquitectónicas más prestigiosas del mercado actual.</p>
           </div>
           <div className="flex items-center gap-4 text-neutral-400">
             <button className="p-2 rounded hover:text-primary">
@@ -149,103 +149,154 @@ const Propiedades = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-surface-container-low p-6 border border-surface-variant flex flex-wrap gap-6">
+        <div className="relative z-40 bg-white/5 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(229,193,88,0.15)] rounded-2xl p-6 md:p-8 flex flex-wrap gap-6">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm text-neutral-400 mb-2">Palabra clave / Ubicación</label>
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-container mb-2">
+              <span className="material-symbols-outlined text-sm">search</span>
+              Palabra clave / Ubicación
+            </label>
             <input
               value={filters.q}
               onChange={(e) => updateFilters({ q: e.target.value })}
               placeholder="Ej. paseo san francisco"
-              className="w-full bg-surface-container border border-surface-variant text-white p-3 outline-none"
+              className="h-[52px] w-full border border-white/20 bg-white/10 rounded-xl px-4 text-white outline-none transition-all placeholder:text-neutral-500 focus:border-[#D4AF37] focus:bg-white/20 focus:shadow-[0_0_10px_rgba(212,175,55,0.15)]"
             />
           </div>
 
           <div className="flex-1 min-w-[200px] relative" ref={modalRef}>
-            <label className="block text-sm text-neutral-400 mb-2">Transacción</label>
-            <button type="button" onClick={() => setShowModalidadDropdown((s) => !s)} className="w-full text-left bg-surface-container border border-surface-variant text-white p-3 rounded flex items-center justify-between">
-              <div className="truncate">
-                {filters.modalidadFilters.length === 0 ? <span className="text-neutral-400">Seleccione transacción</span> : <span className="text-white">{filters.modalidadFilters.join(', ')}</span>}
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-container mb-2">
+              <span className="material-symbols-outlined text-sm">real_estate_agent</span>
+              Transacción
+            </label>
+            <button type="button" onClick={() => setShowModalidadDropdown((s) => !s)} className={`flex items-center justify-between h-[52px] w-full border bg-white/10 rounded-xl px-4 text-white outline-none transition-all ${showModalidadDropdown ? 'border-[#D4AF37] bg-white/20 shadow-[0_0_10px_rgba(212,175,55,0.15)]' : 'border-white/20 hover:border-[#D4AF37] hover:bg-white/20'}`}>
+              <div className="truncate text-sm">
+                {filters.modalidadFilters.length === 0 ? <span className="text-neutral-400">Seleccione transacción</span> : <span className="text-white font-medium">{filters.modalidadFilters.join(', ')}</span>}
               </div>
-              <span className="material-symbols-outlined text-neutral-400">expand_more</span>
+              <span className={`material-symbols-outlined text-neutral-400 transition-transform duration-300 ${showModalidadDropdown ? 'rotate-180 text-[#D4AF37]' : ''}`}>expand_more</span>
             </button>
 
             {showModalidadDropdown && (
-              <div className="absolute left-0 mt-2 w-full bg-[#0F0F0F] border border-surface-variant rounded shadow-lg z-40 p-3">
-                {['Venta', 'Alquiler'].map((m) => (
-                  <label key={m} className="flex items-center gap-2 text-neutral-300 mb-2">
-                    <input type="checkbox" checked={filters.modalidadFilters.includes(m)} onChange={(e) => updateFilters((current) => ({ ...current, modalidadFilters: e.target.checked ? [...current.modalidadFilters, m] : current.modalidadFilters.filter((x) => x !== m) }))} />
-                    <span>{m}</span>
-                  </label>
-                ))}
-              </div>
+              <ul className="absolute left-0 top-full z-50 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-xl border border-white/20 bg-[#111111]/90 backdrop-blur-xl shadow-2xl">
+                {['Venta', 'Alquiler'].map((m) => {
+                  const isChecked = filters.modalidadFilters.includes(m);
+                  return (
+                    <li key={m} className={`cursor-pointer px-4 py-3 text-sm transition-all ${isChecked ? 'bg-primary-container/20 text-[#E5C158]' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}`}>
+                      <label className="flex items-center gap-2 cursor-pointer w-full h-full">
+                        <input type="checkbox" className="accent-[#D4AF37]" checked={isChecked} onChange={(e) => updateFilters((current) => ({ ...current, modalidadFilters: e.target.checked ? [...current.modalidadFilters, m] : current.modalidadFilters.filter((x) => x !== m) }))} />
+                        <span>{m}</span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
 
           <div className="flex-1 min-w-[220px] relative" ref={tipoRef}>
-            <label className="block text-sm text-neutral-400 mb-2">Tipo de Propiedad</label>
-            <button type="button" onClick={() => setShowTipoDropdown((s) => !s)} className="w-full text-left bg-surface-container border border-surface-variant text-white p-3 rounded flex items-center justify-between">
-              <div className="truncate">
-                {Object.keys(filters.types).filter((key) => filters.types[key]).length === 0 ? <span className="text-neutral-400">Seleccione tipo</span> : <span className="text-white">{Object.keys(filters.types).filter((key) => filters.types[key]).join(', ')}</span>}
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-container mb-2">
+              <span className="material-symbols-outlined text-sm">domain</span>
+              Tipo de Propiedad
+            </label>
+            <button type="button" onClick={() => setShowTipoDropdown((s) => !s)} className={`flex items-center justify-between h-[52px] w-full border bg-white/10 rounded-xl px-4 text-white outline-none transition-all ${showTipoDropdown ? 'border-[#D4AF37] bg-white/20 shadow-[0_0_10px_rgba(212,175,55,0.15)]' : 'border-white/20 hover:border-[#D4AF37] hover:bg-white/20'}`}>
+              <div className="truncate text-sm">
+                {Object.keys(filters.types).filter((key) => filters.types[key]).length === 0 ? <span className="text-neutral-400">Seleccione tipo</span> : <span className="text-white font-medium">{Object.keys(filters.types).filter((key) => filters.types[key]).join(', ')}</span>}
               </div>
-              <span className="material-symbols-outlined text-neutral-400">expand_more</span>
+              <span className={`material-symbols-outlined text-neutral-400 transition-transform duration-300 ${showTipoDropdown ? 'rotate-180 text-[#D4AF37]' : ''}`}>expand_more</span>
             </button>
 
             {showTipoDropdown && (
-              <div className="absolute left-0 mt-2 w-full bg-[#0F0F0F] border border-surface-variant rounded shadow-lg z-40 p-3">
-                {types.map((t) => (
-                  <label key={t} className="flex items-center gap-2 text-neutral-300 mb-2">
-                    <input type="checkbox" checked={filters.types[t]} onChange={(e) => updateFilters((current) => ({ ...current, types: { ...current.types, [t]: e.target.checked } }))} />
-                    <span>{t}</span>
-                  </label>
-                ))}
-              </div>
+              <ul className="absolute left-0 top-full z-50 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-xl border border-white/20 bg-[#111111]/90 backdrop-blur-xl shadow-2xl">
+                {types.map((t) => {
+                  const isChecked = filters.types[t];
+                  return (
+                    <li key={t} className={`cursor-pointer px-4 py-3 text-sm transition-all ${isChecked ? 'bg-primary-container/20 text-[#E5C158]' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}`}>
+                      <label className="flex items-center gap-2 cursor-pointer w-full h-full">
+                        <input type="checkbox" className="accent-[#D4AF37]" checked={isChecked} onChange={(e) => updateFilters((current) => ({ ...current, types: { ...current.types, [t]: e.target.checked } }))} />
+                        <span>{t}</span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
 
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-sm text-neutral-400 mb-2">Ciudad</label>
-            <input value={filters.city} onChange={(e) => updateFilters({ city: e.target.value })} placeholder="Ej. Quito" className="w-full bg-surface-container border border-surface-variant text-white p-3 outline-none" />
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-container mb-2">
+              <span className="material-symbols-outlined text-sm">location_city</span>
+              Ciudad
+            </label>
+            <input value={filters.city} onChange={(e) => updateFilters({ city: e.target.value })} placeholder="Ej. Quito" className="h-[52px] w-full border border-white/20 bg-white/10 rounded-xl px-4 text-white outline-none transition-all placeholder:text-neutral-500 focus:border-[#D4AF37] focus:bg-white/20 focus:shadow-[0_0_10px_rgba(212,175,55,0.15)]" />
           </div>
 
           <div className="flex-1 min-w-[240px]">
-            <label className="block text-sm text-neutral-400 mb-2">Rango de Precio</label>
-            <div className="flex gap-2">
-              <input type="number" placeholder="200" value={filters.priceFrom} onChange={(e) => updateFilters({ priceFrom: e.target.value })} className="w-1/2 bg-transparent border border-surface-variant p-2 text-white" />
-              <input type="number" placeholder="500" value={filters.priceTo} onChange={(e) => updateFilters({ priceTo: e.target.value })} className="w-1/2 bg-transparent border border-surface-variant p-2 text-white" />
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-container mb-2">
+              <span className="material-symbols-outlined text-sm">payments</span>
+              Rango de Precio
+            </label>
+            <div className="flex gap-3">
+              <div className="w-1/2 relative group">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-semibold group-focus-within:text-[#E5C158] transition-colors">$</span>
+                <input type="number" placeholder="200" value={filters.priceFrom} onChange={(e) => updateFilters({ priceFrom: e.target.value })} className="h-[52px] w-full border border-white/20 bg-white/10 rounded-xl pl-8 pr-3 text-white outline-none transition-all placeholder:text-neutral-500 focus:border-[#D4AF37] focus:bg-white/20 focus:shadow-[0_0_10px_rgba(212,175,55,0.15)]" />
+              </div>
+              <div className="w-1/2 relative group">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-semibold group-focus-within:text-[#E5C158] transition-colors">$</span>
+                <input type="number" placeholder="500" value={filters.priceTo} onChange={(e) => updateFilters({ priceTo: e.target.value })} className="h-[52px] w-full border border-white/20 bg-white/10 rounded-xl pl-8 pr-3 text-white outline-none transition-all placeholder:text-neutral-500 focus:border-[#D4AF37] focus:bg-white/20 focus:shadow-[0_0_10px_rgba(212,175,55,0.15)]" />
+              </div>
             </div>
-            <div className="flex gap-2 mt-2 text-sm text-neutral-400">
-              <span className="w-1/2">Precio mínimo</span>
-              <span className="w-1/2 text-right">Precio máximo</span>
+            <div className="flex gap-2 mt-2 text-[10px] uppercase tracking-widest font-semibold text-neutral-400">
+              <span className="w-1/2 text-left">Mínimo</span>
+              <span className="w-1/2 text-right">Máximo</span>
             </div>
           </div>
 
-          <div className="flex items-center">
-            <button onClick={resetFilters} className="h-12 px-6 bg-surface-variant text-white border border-surface-variant">Limpiar</button>
+          <div className="flex items-end mb-[22px]">
+            <button onClick={resetFilters} className="flex items-center justify-center gap-2 h-[52px] px-8 rounded-xl border border-primary-container/40 bg-primary-container/5 text-primary-container font-subtitle text-xs uppercase tracking-widest transition-all hover:bg-primary-container/20 hover:border-[#E5C158] hover:shadow-[0_0_20px_rgba(229,193,88,0.3)] hover:-translate-y-0.5 active:scale-[0.98]">
+              <span className="material-symbols-outlined text-[18px]">mop</span>
+              Limpiar
+            </button>
           </div>
 
-          <div className="w-full">
-            <button type="button" onClick={() => setShowMoreFilters((s) => !s)} className="text-sm text-primary-container mt-3">Más filtros</button>
-            {showMoreFilters && (
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input type="number" placeholder="Habitaciones mínimas" value={filters.minRooms} onChange={(e) => updateFilters({ minRooms: e.target.value })} className="bg-transparent border border-surface-variant p-2 text-white" />
-                <input type="number" placeholder="Baños mínimos" value={filters.minBanos} onChange={(e) => updateFilters({ minBanos: e.target.value })} className="bg-transparent border border-surface-variant p-2 text-white" />
-                <div className="flex items-center gap-2 relative" ref={parqueRef}>
-                  <label className="text-sm text-neutral-300">Parqueadero</label>
-                  <button type="button" onClick={() => setShowParqueDropdown((s) => !s)} className="bg-transparent border border-surface-variant p-2 text-white flex items-center gap-2">
-                    <span>{filters.requireParqueadero === null ? 'Cualquiera' : filters.requireParqueadero ? 'Con parqueadero' : 'Sin parqueadero'}</span>
-                    <span className="material-symbols-outlined text-neutral-400">expand_more</span>
+          <div className="w-full flex flex-col items-center">
+            <div className="w-full h-px bg-white/10 my-2"></div>
+            <button type="button" onClick={() => setShowMoreFilters((s) => !s)} className="flex items-center justify-center gap-2 h-10 px-6 rounded-full bg-white/5 border border-white/10 text-xs font-semibold uppercase tracking-widest text-primary-container mt-2 hover:bg-white/10 hover:text-[#E5C158] hover:border-white/30 transition-all group">
+              Más filtros
+              <span className={`material-symbols-outlined text-[18px] transition-transform duration-300 ${showMoreFilters ? 'rotate-180 text-[#E5C158]' : 'group-hover:translate-y-0.5'}`}>
+                keyboard_arrow_down
+              </span>
+            </button>
+            <div className={`w-full transition-all duration-500 ease-in-out ${showMoreFilters ? 'max-h-[500px] opacity-100 mt-6 overflow-visible' : 'max-h-0 opacity-0 mt-0 overflow-hidden'}`}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                
+                <div className="relative group">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 material-symbols-outlined text-[20px] group-focus-within:text-[#E5C158] transition-colors">bed</span>
+                  <input type="number" placeholder="Habitaciones mínimas" value={filters.minRooms} onChange={(e) => updateFilters({ minRooms: e.target.value })} className="h-[52px] w-full border border-white/20 bg-white/10 rounded-xl pl-12 pr-4 text-white outline-none transition-all placeholder:text-neutral-500 focus:border-[#D4AF37] focus:bg-white/20 focus:shadow-[0_0_10px_rgba(212,175,55,0.15)]" />
+                </div>
+                
+                <div className="relative group">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 material-symbols-outlined text-[20px] group-focus-within:text-[#E5C158] transition-colors">shower</span>
+                  <input type="number" placeholder="Baños mínimos" value={filters.minBanos} onChange={(e) => updateFilters({ minBanos: e.target.value })} className="h-[52px] w-full border border-white/20 bg-white/10 rounded-xl pl-12 pr-4 text-white outline-none transition-all placeholder:text-neutral-500 focus:border-[#D4AF37] focus:bg-white/20 focus:shadow-[0_0_10px_rgba(212,175,55,0.15)]" />
+                </div>
+
+                <div className="relative" ref={parqueRef}>
+                  <button type="button" onClick={() => setShowParqueDropdown((s) => !s)} className={`flex items-center justify-between h-[52px] w-full border bg-white/10 rounded-xl px-4 text-white outline-none transition-all ${showParqueDropdown ? 'border-[#D4AF37] bg-white/20 shadow-[0_0_10px_rgba(212,175,55,0.15)]' : 'border-white/20 hover:border-[#D4AF37] hover:bg-white/20'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[20px] text-neutral-500">directions_car</span>
+                      <span className="truncate text-sm font-medium">{filters.requireParqueadero === null ? 'Parqueadero (Todos)' : filters.requireParqueadero ? 'Con parqueadero' : 'Sin parqueadero'}</span>
+                    </div>
+                    <span className={`material-symbols-outlined text-neutral-400 transition-transform duration-300 ${showParqueDropdown ? 'rotate-180 text-[#D4AF37]' : ''}`}>expand_more</span>
                   </button>
 
                   {showParqueDropdown && (
-                    <div className="absolute right-0 mt-10 w-48 bg-[#0F0F0F] border border-surface-variant rounded shadow-lg z-40 p-3">
-                      <button onClick={() => { updateFilters({ requireParqueadero: null }); setShowParqueDropdown(false); }} className="w-full text-left py-2 text-neutral-300">Cualquiera</button>
-                      <button onClick={() => { updateFilters({ requireParqueadero: true }); setShowParqueDropdown(false); }} className="w-full text-left py-2 text-neutral-300">Con parqueadero</button>
-                      <button onClick={() => { updateFilters({ requireParqueadero: false }); setShowParqueDropdown(false); }} className="w-full text-left py-2 text-neutral-300">Sin parqueadero</button>
-                    </div>
+                    <ul className="absolute left-0 top-full z-50 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-xl border border-white/20 bg-[#111111]/90 backdrop-blur-xl shadow-2xl">
+                      <li onClick={() => { updateFilters({ requireParqueadero: null }); setShowParqueDropdown(false); }} className={`cursor-pointer px-4 py-3 text-sm transition-all ${filters.requireParqueadero === null ? 'bg-primary-container/20 text-[#E5C158]' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}`}>Cualquiera</li>
+                      <li onClick={() => { updateFilters({ requireParqueadero: true }); setShowParqueDropdown(false); }} className={`cursor-pointer px-4 py-3 text-sm transition-all ${filters.requireParqueadero === true ? 'bg-primary-container/20 text-[#E5C158]' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}`}>Con parqueadero</li>
+                      <li onClick={() => { updateFilters({ requireParqueadero: false }); setShowParqueDropdown(false); }} className={`cursor-pointer px-4 py-3 text-sm transition-all ${filters.requireParqueadero === false ? 'bg-primary-container/20 text-[#E5C158]' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}`}>Sin parqueadero</li>
+                    </ul>
                   )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </section>

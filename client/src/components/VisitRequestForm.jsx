@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
+import CustomSelect from './CustomSelect';
 import visitService from '../api/visitService';
 
 const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+$/;
@@ -260,9 +261,8 @@ const VisitRequestForm = ({ propertyId }) => {
         <div>
           <label className="text-sm text-neutral-400">Hora</label>
           <div className="flex gap-2 mt-1">
-            <select
+            <CustomSelect
               value={`${hour}-${ampm}`}
-              onBlur={() => handleBlur('time')}
               onChange={(e) => {
                 const [hVal, ampmVal] = e.target.value.split('-');
                 setHour(hVal);
@@ -274,29 +274,27 @@ const VisitRequestForm = ({ propertyId }) => {
                   delete next.time;
                   return next;
                 });
+                handleBlur('time');
               }}
-              className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3"
-            >
-              <optgroup label="AM">
-                {amHours.map((h) => <option key={`am-${h}`} value={`${h}-AM`}>{h} AM</option>)}
-              </optgroup>
-              <optgroup label="PM">
-                {pmHours.map((h) => <option key={`pm-${h}`} value={`${h}-PM`}>{h} PM</option>)}
-              </optgroup>
-            </select>
+              className="h-12 border-neutral-800 text-sm"
+              options={[
+                ...amHours.map((h) => ({ value: `${h}-AM`, label: `${h} AM` })),
+                ...pmHours.map((h) => ({ value: `${h}-PM`, label: `${h} PM` }))
+              ]}
+            />
 
-            <select
+            <CustomSelect
               value={minute}
-              onBlur={() => handleBlur('time')}
-              onChange={(e) => handleFieldChange(setMinute, 'time', e.target.value)}
-              className="h-12 bg-surface-container-low border border-neutral-800 text-white px-3"
-            >
-              {minutes.map((min) => (
-                <option key={min} value={min.toString().padStart(2, '0')}>
-                  {min.toString().padStart(2, '0')}
-                </option>
-              ))}
-            </select>
+              onChange={(e) => {
+                handleFieldChange(setMinute, 'time', e.target.value);
+                handleBlur('time');
+              }}
+              className="h-12 border-neutral-800 text-sm"
+              options={minutes.map((min) => ({
+                value: min.toString().padStart(2, '0'),
+                label: min.toString().padStart(2, '0')
+              }))}
+            />
           </div>
           <p className="text-[11px] text-neutral-500 mt-1.5 uppercase tracking-wider">El horario disponible de visitas es de 7:00 AM a 8:00 PM.</p>
           {errors.time && <div className="text-rose-400 text-sm mt-1">{errors.time}</div>}
