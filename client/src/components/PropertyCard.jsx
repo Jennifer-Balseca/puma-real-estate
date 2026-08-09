@@ -22,7 +22,7 @@ const PropertyCard = ({
   const CardTag = onClick ? 'button' : 'div';
 
   return (
-    <article className={`group border border-white/10 bg-white/10 backdrop-blur-md transition-all duration-500 hover:border-[#E5C158]/50 hover:bg-white/20 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(229,193,88,0.25)] flex flex-col ${className}`}>
+    <article className={`relative z-10 focus-within:z-50 group border border-white/10 bg-white/10 backdrop-blur-md transition-all duration-500 hover:border-[#E5C158]/50 hover:bg-white/20 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(229,193,88,0.25)] flex flex-col ${className}`}>
       <CardTag type={onClick ? 'button' : undefined} onClick={onClick} className="block w-full text-left flex-1">
         <div className={imageClassName}>
           {hero ? (
@@ -42,9 +42,24 @@ const PropertyCard = ({
             <div className="flex h-full items-center justify-center text-center text-sm text-[#C0C0C0]">Sin imágenes</div>
           )}
 
-          <div className="absolute left-4 top-4 rounded-sm bg-white/20 backdrop-blur-xl border border-white/30 shadow-lg px-3 py-1 text-xs uppercase tracking-[0.18em] text-white font-semibold">
-            {badgeLabel || property?.estado || 'Disponible'}
-          </div>
+          {(() => {
+            const displayStatus = String(badgeLabel || property?.estado || 'Disponible').toUpperCase();
+          let badgeColorClass = 'bg-white/20 border-white/30 text-white';
+          
+          if (displayStatus === 'VENDIDA') {
+            badgeColorClass = 'bg-red-600/90 border-red-500/50 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]';
+          } else if (displayStatus === 'ALQUILADA') {
+            badgeColorClass = 'bg-sky-600/90 border-sky-500/50 text-white shadow-[0_0_15px_rgba(2,132,199,0.5)]';
+          } else if (displayStatus === 'DISPONIBLE') {
+            badgeColorClass = 'bg-emerald-600/90 border-emerald-500/50 text-white shadow-[0_0_15px_rgba(5,150,105,0.5)]';
+          }
+
+          return (
+            <div className={`absolute left-4 top-4 rounded-sm backdrop-blur-xl border shadow-lg px-3 py-1 text-xs uppercase tracking-[0.18em] font-bold ${badgeColorClass}`}>
+              {displayStatus}
+            </div>
+          );
+        })()}
 
           <div className="absolute left-4 bottom-4 w-[calc(100%-2rem)] bg-black/50 backdrop-blur-xl border border-white/20 p-4 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
             <p className="text-sm text-[#D4AF37]">{propertyLabel}</p>

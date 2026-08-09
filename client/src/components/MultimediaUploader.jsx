@@ -15,6 +15,7 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
   const [currentFileName, setCurrentFileName] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const uploadTaskRef = useRef(null);
 
   const previewFiles = useMemo(() => files.map((file) => ({
@@ -146,6 +147,42 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
     });
 
     event.target.value = '';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    resetMessages();
+    
+    const droppedFiles = Array.from(e.dataTransfer.files || []);
+    if (!droppedFiles.length) return;
+
+    const invalidFile = droppedFiles.find((file) => validateFile(file));
+    if (invalidFile) {
+      setError(validateFile(invalidFile));
+      return;
+    }
+    
+    setFiles((currentFiles) => {
+      const mergedFiles = [...currentFiles, ...droppedFiles];
+      const uniqueFiles = mergedFiles.filter((file, index, array) => {
+        const firstIndex = array.findIndex((item) => (
+          item.name === file.name && item.size === file.size && item.lastModified === file.lastModified
+        ));
+        return firstIndex === index;
+      });
+      return uniqueFiles;
+    });
   };
 
   const uploadSingleFile = (file) => new Promise((resolve, reject) => {
@@ -288,8 +325,17 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
       
       </div>
 
-      {/* Vista Desktop (Dropzone) */}
-      <div className="relative hidden md:flex md:flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#D4AF37]/40 bg-white/5 backdrop-blur-sm p-10 text-center transition-all duration-300 hover:border-[#D4AF37] hover:bg-white/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)]">
+      {/* Vista Desktop  */}
+      <div 
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`relative hidden md:flex md:flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 text-center transition-all duration-300 ${
+          isDragging 
+            ? 'border-[#D4AF37] bg-white/20 shadow-[0_0_20px_rgba(212,175,55,0.3)]' 
+            : 'border-[#D4AF37]/40 bg-white/5 hover:border-[#D4AF37] hover:bg-white/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)]'
+        }`}
+      >
         <span className="material-symbols-outlined mb-3 text-4xl text-[#D4AF37]">cloud_upload</span>
         <h4 className="mb-1 text-sm font-semibold uppercase tracking-[0.1em] text-white">Sube tus archivos multimedia</h4>
         <p className="mb-5 text-xs text-[#C0C0C0]">Haz clic en el botón inferior para explorar en tu dispositivo</p>

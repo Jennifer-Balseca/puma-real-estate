@@ -368,6 +368,14 @@ const updateProperty = async (req, res) => {
             .populate('agente', 'name email role')
             .populate('createdBy', 'name email role');
 
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('property:statusUpdated', { 
+                propertyId: updatedProperty._id, 
+                estado: updatedProperty.estado 
+            });
+        }
+
         return res.status(200).json({
             message: 'Propiedad actualizada correctamente.',
             property: updatedProperty

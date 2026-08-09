@@ -22,6 +22,7 @@ import Propiedades from './pages/Propiedades';
 import PropertyDetail from './pages/PropertyDetail';
 import Contacto from './pages/Contacto';
 import socket from './socket';
+import { emitPropertiesRefresh } from './utils/propertyEvents';
 
 const App = () => {
   const { initializing, isAuthenticated, role, user } = useAuth();
@@ -32,6 +33,20 @@ const App = () => {
       console.log('Socket emitted auth:join for user:', user._id);
     }
   }, [isAuthenticated, user, role]);
+
+  // Escuchar actualizaciones globales de propiedades por Socket.IO
+  useEffect(() => {
+    const handlePropertyUpdate = () => {
+      console.log('Socket received property:statusUpdated. Emitting DOM refresh event.');
+      emitPropertiesRefresh();
+    };
+
+    socket.on('property:statusUpdated', handlePropertyUpdate);
+
+    return () => {
+      socket.off('property:statusUpdated', handlePropertyUpdate);
+    };
+  }, []);
 
   if (initializing) {
     return null;
