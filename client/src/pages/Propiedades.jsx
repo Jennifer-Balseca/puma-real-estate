@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import PropertyCard from '../components/PropertyCard';
 import { usePropertyFilters } from '../context/PropertyFiltersContext';
+import usePropertiesRefresh from '../hooks/usePropertiesRefresh';
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 
@@ -23,16 +24,16 @@ const Propiedades = () => {
   const tipoRef = useRef(null);
   const parqueRef = useRef(null);
 
+  const refreshTick = usePropertiesRefresh();
+
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
+      if (allProperties.length === 0) setLoading(true);
       setError('');
       try {
-        const res = await api.get('/api/properties');
+        const res = await api.get(`/api/properties?t=${Date.now()}`);
         const props = res.data?.properties || [];
         setAllProperties(props);
-
-        const prices = props.map((p) => Number(p.precio) || 0).filter((n) => Number.isFinite(n));
       } catch (e) {
         setError('No se pudieron cargar las propiedades.');
       } finally {
@@ -41,7 +42,7 @@ const Propiedades = () => {
     };
 
     void load();
-  }, []);
+  }, [refreshTick]);
 
   useEffect(() => {
     const modalidadParam = query.get('modalidad') || '';
@@ -81,7 +82,6 @@ const Propiedades = () => {
 
   const filtered = useMemo(() => {
     return allProperties.filter((p) => {
-      const isAvailable = String(p.estado || '').toLowerCase() === 'disponible';
       const price = Number(p.precio) || 0;
 
       // modalidad 
@@ -122,7 +122,7 @@ const Propiedades = () => {
       const matchesParqueadero = filters.requireParqueadero === null || (filters.requireParqueadero === true ? Boolean(p.caracteristicas?.parqueadero) : true);
 
       // combinación de filtros 
-      return isAvailable && matchesModalidad && matchesTipo && matchesPrice && matchesCity && matchesRooms && matchesBanos && matchesParqueadero && (matchesUbicacion || matchesAmenidades);
+      return matchesModalidad && matchesTipo && matchesPrice && matchesCity && matchesRooms && matchesBanos && matchesParqueadero && (matchesUbicacion || matchesAmenidades);
     });
   }, [allProperties, filters]);
 

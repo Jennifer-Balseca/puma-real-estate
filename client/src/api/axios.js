@@ -34,7 +34,9 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const url = String(error.config?.url ?? '');
+    
+    if (error.response && error.response.status === 401 && !url.includes('/api/auth/login')) {
       window.localStorage.removeItem('puma-auth');
       window.location.href = '/login';
     }

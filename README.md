@@ -370,6 +370,18 @@ Pendientes o mejoras futuras:
 
 ---
 
+## Seguridad, Validaciones y Lógica de Negocio
+
+El sistema incluye fuertes validaciones para asegurar la integridad de la base de datos y la seguridad:
+- **Autenticación (JWT):** Generación de tokens para proteger las rutas.
+- **Rate Limiting:** Protección anti-fuerza bruta en el login (5 intentos) y anti-spam en el envío de solicitudes de visitas (5 peticiones por hora).
+- **Control de Agenda (Choque de Horarios):** El backend bloquea asignaciones si el Agente ya tiene otra cita agendada a la misma hora.
+- **Prevención de Duplicados:** Validación mediante correos y `requestKey` para evitar que un usuario registre la misma visita dos veces seguidas.
+- **Autorización por Rol y Pertenencia:** Los Agentes solo pueden editar sus propias propiedades.
+- **Validaciones Estrictas:** Controles numéricos y restricciones en las máquinas de estado de las propiedades (Disponible, Vendida, Alquilada) y visitas.
+
+---
+
 ## Seguridad y buenas prácticas
 
 - No subas `server/.env` ni `client/.env.local` al repositorio.
@@ -389,11 +401,12 @@ Proyecto académico. Puede utilizarse licencia MIT si se desea.
 
 ## Endpoints principales
 
-### Backend
+### Backend (28 Endpoints)
 - `GET /` respuesta básica de estado.
 - `GET /health` estado de conexión con MongoDB.
 - `POST /api/auth/login` inicio de sesión.
 - `GET /api/auth/me` sesión actual.
+- `POST /api/auth/change-password` cambiar contraseña.
 - `GET /api/properties` listado público de propiedades.
 - `GET /api/properties/:id` detalle de una propiedad.
 - `GET /api/properties/my-properties` propiedades del usuario autenticado.
@@ -407,13 +420,20 @@ Proyecto académico. Puede utilizarse licencia MIT si se desea.
 - `POST /api/visits` crear solicitud pública.
 - `POST /api/visits/:id/assign` asignar agente.
 - `POST /api/visits/:id/accept` aceptar solicitud.
+- `POST /api/visits/:id/confirm` confirmar y generar cita.
+- `POST /api/visits/:id/cancel` cancelar solicitud.
+- `POST /api/visits/:id/notes` agregar notas internas.
 - `PATCH /api/visits/:id/status` actualizar estado de visita.
 - `PATCH /api/visits/:id/property-status` actualizar estado de la propiedad asociada.
 - `GET /api/admin/users` listar usuarios.
 - `GET /api/admin/agents` listar agentes activos.
+- `GET /api/admin/dashboard-stats` obtener estadísticas globales.
 - `POST /api/admin/users/register` registrar agente.
 - `PATCH /api/admin/users/:id` actualizar agente.
 - `PATCH /api/admin/users/:id/status` activar o desactivar usuario.
+- `POST /api/admin/users/:id/reset-password` reset de contraseña autogenerada.
+
+> 📌 Para ver ejemplos de Body y detalles técnicos de uso, consulta el archivo `tesis-docs/endpoints_informacion.md`.
 
 ### Eventos en tiempo real
 El backend emite eventos por Socket.IO cuando cambian las visitas o el estado de una propiedad:

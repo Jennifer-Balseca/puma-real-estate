@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/axios';
 import VisitRequestForm from '../components/VisitRequestForm';
+import usePropertiesRefresh from '../hooks/usePropertiesRefresh';
 
 const PropertyDetail = () => {
   const { id } = useParams();
@@ -9,14 +10,15 @@ const PropertyDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const refreshTick = usePropertiesRefresh();
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
+      if (!property) setLoading(true);
       try {
-        const res = await api.get(`/api/properties/${id}`);
+        const res = await api.get(`/api/properties/${id}?t=${Date.now()}`);
         setProperty(res.data.property);
       } catch (e) {
         setError('No se pudo cargar la propiedad.');
@@ -26,7 +28,7 @@ const PropertyDetail = () => {
     };
 
     void load();
-  }, [id]);
+  }, [id, refreshTick]);
 
   if (loading) return <div className="pt-20 p-6 text-neutral-400">Cargando propiedad...</div>;
   if (error) return <div className="pt-20 p-6 text-red-400">{error}</div>;
@@ -118,7 +120,7 @@ const PropertyDetail = () => {
           </div>
         </div>
 
-        {isAvailable && (
+        {isAvailable ? (
           <div className="w-full mt-12 bg-surface-container-lowest py-12 px-6 border-t border-neutral-900">
             <div className="max-w-[900px] mx-auto">
               <div className="text-center mb-8">
@@ -126,6 +128,14 @@ const PropertyDetail = () => {
                 <p className="text-neutral-500 font-subtitle uppercase tracking-widest text-sm">Experimente la excelencia en persona</p>
               </div>
               <VisitRequestForm propertyId={property._id} />
+            </div>
+          </div>
+        ) : (
+          <div className="w-full mt-12 bg-surface-container-lowest py-12 px-6 border-t border-neutral-900 text-center">
+            <div className="max-w-[900px] mx-auto p-12 border border-[#D4AF37]/30 bg-[#D4AF37]/5 backdrop-blur-md rounded-xl">
+               <span className="material-symbols-outlined text-4xl text-[#D4AF37] mb-4">info</span>
+               <h2 className="font-h1 text-2xl text-white mb-2">Propiedad {String(property?.estado || '').toLowerCase()}</h2>
+               <p className="text-[#C0C0C0]">Esta propiedad se encuentra actualmente {String(property?.estado || '').toLowerCase()}. No se pueden programar nuevas visitas en este momento.</p>
             </div>
           </div>
         )}

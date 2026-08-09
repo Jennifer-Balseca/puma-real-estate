@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import PropertyCard from '../components/PropertyCard';
 import { usePropertyFilters } from '../context/PropertyFiltersContext';
+import usePropertiesRefresh from '../hooks/usePropertiesRefresh';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -11,21 +12,21 @@ const HomePage = () => {
   const initializedSearchReset = useRef(false);
   const propertyTypeKeys = ['Casa', 'Departamento', 'Terreno', 'Oficina'];
   const { filters, updateFilters } = usePropertyFilters();
+  const refreshTick = usePropertiesRefresh();
 
   useEffect(() => {
     const loadLatest = async () => {
       try {
-        const res = await api.get('/api/properties');
+        const res = await api.get(`/api/properties?t=${Date.now()}`);
         const props = res.data?.properties || [];
-        const availableProperties = props.filter((property) => String(property.estado || '').toLowerCase() === 'disponible');
-        setLatestProperties(availableProperties.slice(0, 3));
+        setLatestProperties(props.slice(0, 3));
       } catch (e) {
-
+        console.error('Error fetching latest properties:', e);
       }
     };
 
     void loadLatest();
-  }, []);
+  }, [refreshTick]);
 
   useEffect(() => {
     if (initializedSearchReset.current) return;
@@ -131,7 +132,6 @@ const HomePage = () => {
         <div className="mb-6 text-center">
           <p className="font-caption text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]">Novedades</p>
           <h2 className="font-h1 text-3xl uppercase tracking-tight text-white md:text-4xl">Propiedades nuevas</h2>
-          <p className="mx-auto max-w-2xl text-sm text-[#C0C0C0] md:text-base">Las últimas tres propiedades añadidas al sistema.</p>
         </div>
 
         <div className="grid gap-6 grid-cols-1 md:grid-cols-3">

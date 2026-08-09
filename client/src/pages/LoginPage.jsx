@@ -58,7 +58,7 @@ const LoginPage = () => {
       await waitForBackendReady();
 
       setStatusMessage('Validando credenciales...');
-      const response = await api.post('/api/auth/login', {
+      const response = await api.post(`/api/auth/login?t=${Date.now()}`, {
         email,
         password,
       });

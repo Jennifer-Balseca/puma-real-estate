@@ -20,7 +20,6 @@ const PropertyCatalog = ({ mode = 'public' }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [deletingId, setDeletingId] = useState('');
   const [changingStateId, setChangingStateId] = useState('');
-  const [nextStateByProperty, setNextStateByProperty] = useState({});
   const [activeStatusTab, setActiveStatusTab] = useState('Disponible');
 
   const isAgent = role === 'Agente';
@@ -28,11 +27,11 @@ const PropertyCatalog = ({ mode = 'public' }) => {
   const currentUserId = String(user?._id || user?.id || '');
 
   const loadProperties = async () => {
-    setLoading(true);
+    if (allProperties.length === 0) setLoading(true);
     setError('');
 
     try {
-      const allResponse = await api.get('/api/properties');
+      const allResponse = await api.get(`/api/properties?t=${Date.now()}`);
       setAllProperties(allResponse.data?.properties ?? []);
 
       if (mode === 'agent') {
@@ -56,14 +55,7 @@ const PropertyCatalog = ({ mode = 'public' }) => {
     return () => window.clearTimeout(timeoutId);
   }, [successMessage]);
 
-  useEffect(() => {
-    const initialNextStates = allProperties.reduce((accumulator, property) => {
-      accumulator[property._id] = property.estado || 'Disponible';
-      return accumulator;
-    }, {});
 
-    setNextStateByProperty(initialNextStates);
-  }, [allProperties, myProperties, mode]);
 
   const canManageProperty = (property) => {
     const propertyOwnerId = String(property.createdBy?._id || property.createdBy || property.agente?._id || property.agente || '');
@@ -100,18 +92,13 @@ const PropertyCatalog = ({ mode = 'public' }) => {
     }
   };
 
-  const handleStateChange = (propertyId, value) => {
-    setNextStateByProperty((currentValue) => ({
-      ...currentValue,
-      [propertyId]: value,
-    }));
-  };
-
-  const handleUpdateState = async (property) => {
-    const nextState = nextStateByProperty[property._id] || property.estado || 'Disponible';
-
+  const handleDirectStateUpdate = async (property, nextState) => {
     if (nextState === property.estado) {
       setSuccessMessage('El estado ya estaba actualizado.');
+      return;
+    }
+
+    if (!window.confirm(`¿Estás seguro de que deseas cambiar el estado de la propiedad a "${nextState}"?`)) {
       return;
     }
 
@@ -119,6 +106,7 @@ const PropertyCatalog = ({ mode = 'public' }) => {
     try {
       await api.put(`/api/properties/${property._id}`, { estado: nextState });
       setSuccessMessage(`Estado actualizado a ${nextState}.`);
+      setActiveStatusTab(nextState);
       await loadProperties();
     } catch (requestError) {
       setError(requestError.response?.data?.message || 'No se pudo actualizar el estado de la propiedad.');
@@ -236,20 +224,13 @@ const PropertyCatalog = ({ mode = 'public' }) => {
           <div className="flex-1 min-w-0">
             <CustomSelect
               id={`state-${property._id}`}
-              value={nextStateByProperty[property._id] || property.estado || 'Disponible'}
-              onChange={(e) => handleStateChange(property._id, e.target.value)}
+              value={property.estado || 'Disponible'}
+              onChange={(e) => handleDirectStateUpdate(property, e.target.value)}
               className="h-11 border-neutral-800 text-sm px-3"
               options={propertyStates.map((state) => ({ value: state, label: state }))}
+              disabled={changingStateId === property._id}
             />
           </div>
-          <button
-            type="button"
-            onClick={() => handleUpdateState(property)}
-            disabled={changingStateId === property._id}
-            className="h-11 border border-[#D4AF37] px-4 text-xs uppercase tracking-[0.2em] text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {changingStateId === property._id ? 'Actualizando...' : 'Cambiar'}
-          </button>
         </div>
 
         <div className="flex gap-3">
@@ -327,7 +308,7 @@ const PropertyCatalog = ({ mode = 'public' }) => {
             <p className="max-w-2xl text-sm text-[#C0C0C0] md:text-base">
               {mode === 'admin'
                 ? 'El administrador puede ver, crear, editar y eliminar todas las propiedades.'
-                : 'La primera sección muestra todas las propiedades del sistema en modo solo lectura.'}
+                : ''}
             </p>
           </div>
 
