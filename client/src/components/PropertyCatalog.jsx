@@ -21,7 +21,6 @@ const PropertyCatalog = ({ mode = 'public' }) => {
   const [deletingId, setDeletingId] = useState('');
   const [changingStateId, setChangingStateId] = useState('');
   const [activeStatusTab, setActiveStatusTab] = useState('Disponible');
-
   const isAgent = role === 'Agente';
   const isAdmin = role === 'Admin';
   const currentUserId = String(user?._id || user?.id || '');

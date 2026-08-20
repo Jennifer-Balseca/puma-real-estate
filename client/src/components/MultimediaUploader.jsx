@@ -439,5 +439,4 @@ const MultimediaUploader = ({ propertyId, onUploaded }) => {
     </div>
   );
 };
-
 export default MultimediaUploader;

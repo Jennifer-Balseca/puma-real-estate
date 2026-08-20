@@ -105,8 +105,6 @@ const AdminAgentes = () => {
     setUpdatingId(agent._id);
     setError('');
     const newStatus = (agent.status || agent.estado) === 'Activo' ? 'Inactivo' : 'Activo';
-
-    // Optimistic UI update
     setAgents(prev => prev.map(a => a._id === agent._id ? { ...a, status: newStatus, estado: newStatus } : a));
 
     try {
@@ -114,7 +112,6 @@ const AdminAgentes = () => {
       await loadAgents(true);
     } catch (requestError) {
       setError(requestError?.response?.data?.message ?? 'No se pudo actualizar el estado del agente.');
-      // Revert optimistic update on failure
       void loadAgents(true);
     } finally {
       setUpdatingId('');
@@ -417,15 +414,6 @@ const AdminAgentes = () => {
             </div>
           </>
         )}
-
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center border border-primary-container bg-primary-container text-black shadow-2xl shadow-black/40 transition-transform hover:scale-105 md:hidden"
-            aria-label="Crear nuevo agente"
-          >
-            <span className="material-symbols-outlined text-2xl">person_add</span>
-          </button>
 
         {isModalOpen ? (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm md:items-center">

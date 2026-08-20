@@ -33,11 +33,9 @@ const listUsers = async (req, res) => {
         if (role) {
             filters.role = role;
         }
-
         if (status) {
             filters.status = status;
         }
-
         const users = await User.find(filters)
             .sort({ createdAt: -1 })
             .select('-password -__v');
@@ -55,15 +53,12 @@ const listUsers = async (req, res) => {
 const registerAgent = async (req, res) => {
     try {
         const { name, email, password, role = 'Agente' } = req.body;
-
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Nombre, email y contraseña son obligatorios.' });
         }
-
         if (!['Agente', 'Admin'].includes(role)) {
             return res.status(400).json({ message: 'El rol seleccionado no es válido.' });
         }
-
         const normalizedEmail = email.trim().toLowerCase();
         const existingUser = await User.findOne({ email: normalizedEmail });
 
@@ -97,60 +92,47 @@ const updateAgent = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, email, password, role, status } = req.body;
-
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: 'El identificador no es válido.' });
         }
-
         const user = await User.findById(id);
-
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
-
         if (name !== undefined) {
             const trimmedName = String(name).trim();
-
             if (!trimmedName) {
                 return res.status(400).json({ message: 'El nombre no puede estar vacío.' });
             }
-
             user.name = trimmedName;
         }
 
         if (email !== undefined) {
             const normalizedEmail = String(email).trim().toLowerCase();
-
             if (!normalizedEmail) {
                 return res.status(400).json({ message: 'El correo no puede estar vacío.' });
             }
-
             const existingUser = await User.findOne({ email: normalizedEmail, _id: { $ne: id } });
 
             if (existingUser) {
                 return res.status(409).json({ message: 'Ya existe un usuario con ese email.' });
             }
-
             user.email = normalizedEmail;
         }
 
         if (password !== undefined && String(password).trim()) {
             user.password = await bcrypt.hash(String(password), 10);
         }
-
         if (role !== undefined) {
             if (!['Admin', 'Agente'].includes(role)) {
                 return res.status(400).json({ message: 'El rol seleccionado no es válido.' });
             }
-
             user.role = role;
         }
-
         if (status !== undefined) {
             if (!['Activo', 'Inactivo'].includes(status)) {
                 return res.status(400).json({ message: 'El estado seleccionado no es válido.' });
             }
-
             user.status = status;
         }
 
@@ -158,7 +140,6 @@ const updateAgent = async (req, res) => {
 
         const io = req.app && req.app.get && req.app.get('io');
         if (io) io.emit('agent:updated');
-
         return res.status(200).json({
             message: 'Agente actualizado correctamente.',
             user: sanitizeUser(user)
@@ -171,7 +152,6 @@ const updateAgent = async (req, res) => {
 const deactivateUser = async (req, res) => {
     try {
         const { id } = req.params;
-
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: 'El identificador no es válido.' });
         }
@@ -181,7 +161,6 @@ const deactivateUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
-
         if ((user.role || user.rol) !== 'Agente') {
             return res.status(400).json({ message: 'Solo se pueden desactivar agentes.' });
         }
@@ -298,7 +277,6 @@ const getDashboardStats = async (req, res) => {
                     endRange = parsedEnd;
                 }
             }
-
             // Validar que el fin no sea a futuro
             const today = new Date();
             if (endRange > today) {
@@ -312,12 +290,10 @@ const getDashboardStats = async (req, res) => {
             startRangeOfDay.setHours(0, 0, 0, 0);
             const endRangeOfDay = new Date(endRange);
             endRangeOfDay.setHours(23, 59, 59, 999);
-
             // Una sola consulta para el rango semanal completo
             const weeklyVisits = await VisitRequest.find({
                 createdAt: { $gte: startRangeOfDay, $lte: endRangeOfDay }
             }, 'createdAt');
-
             // Agrupar día por día de la semana seleccionada
             const weekdayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
             const diffTime = Math.abs(endRange - startRange);
@@ -365,7 +341,6 @@ const getDashboardStats = async (req, res) => {
 
             const startOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
             const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
-
             // Una sola consulta para el mes completo
             const monthlyVisits = await VisitRequest.find({
                 createdAt: { $gte: startOfMonth, $lte: endOfMonth }
@@ -382,7 +357,6 @@ const getDashboardStats = async (req, res) => {
                 monthlyStats.push({ label, count });
             }
         }
-
         // 2. Zonas de Alta Demanda (Sectores con más solicitudes)
         const sectorStats = await VisitRequest.aggregate([
             {
@@ -415,7 +389,6 @@ const getDashboardStats = async (req, res) => {
                 $limit: 5
             }
         ]);
-
         // 3. Rendimiento de Agentes (Visitas atendidas y completadas)
         const agentPerformance = await VisitRequest.aggregate([
             {
@@ -458,7 +431,6 @@ const getDashboardStats = async (req, res) => {
                 $limit: 5
             }
         ]);
-
         // 4. Propiedades más Populares (Por solicitudes de visita)
         const popularProperties = await VisitRequest.aggregate([
             {
@@ -529,7 +501,7 @@ const resetAgentPassword = async (req, res) => {
             return res.status(404).json({ message: 'Agente no encontrado.' });
         }
 
-        // Generar clave provisional de 8 caracteres (Puma + 4 letras + 2 números)
+        // Generar clave provisional de 8 caracteres
         const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
         const numbers = '0123456789';
         let tempPassword = 'Puma';

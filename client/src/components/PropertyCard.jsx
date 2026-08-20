@@ -45,7 +45,6 @@ const PropertyCard = ({
           {(() => {
             const displayStatus = String(badgeLabel || property?.estado || 'Disponible').toUpperCase();
           let badgeColorClass = 'bg-white/20 border-white/30 text-white';
-          
           if (displayStatus === 'VENDIDA') {
             badgeColorClass = 'bg-red-600/90 border-red-500/50 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]';
           } else if (displayStatus === 'ALQUILADA') {
