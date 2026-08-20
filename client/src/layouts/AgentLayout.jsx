@@ -135,7 +135,6 @@ const AgentLayout = ({ children }) => {
           </p>
         </div>
       </footer>
-
       <ChangePasswordModal isOpen={isChangePasswordOpen} onClose={() => setIsChangePasswordOpen(false)} />
     </div>
   );

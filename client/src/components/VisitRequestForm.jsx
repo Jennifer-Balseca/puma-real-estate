@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import api from '../api/axios';
 import CustomSelect from './CustomSelect';
 import visitService from '../api/visitService';
@@ -33,6 +33,7 @@ const VisitRequestForm = ({ propertyId }) => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [success, setSuccess] = useState('');
 
   const amHours = useMemo(() => [7, 8, 9, 10, 11], []);
@@ -124,12 +125,14 @@ const VisitRequestForm = ({ propertyId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting || submittingRef.current) return;
     setSuccess('');
     const allTouched = { name: true, phone: true, email: true, date: true, time: true, message: true };
     setTouched(allTouched);
 
     if (!validate(true, allTouched)) return;
 
+    submittingRef.current = true;
     const h = Number(hour);
     let h24 = h;
     if (ampm === 'AM') {
@@ -175,14 +178,16 @@ const VisitRequestForm = ({ propertyId }) => {
       setErrors((current) => ({ ...current, submit: message }));
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 
   const handleRetry = async () => {
-    if (!pendingRequest) return;
+    if (!pendingRequest || submittingRef.current) return;
 
     try {
       setSubmitting(true);
+      submittingRef.current = true;
       const freshProperty = await api.get(`/api/properties/${propertyId}`);
       const currentState = String(freshProperty?.data?.property?.estado || '').toLowerCase().trim();
       if (currentState !== 'disponible') {

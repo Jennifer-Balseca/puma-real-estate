@@ -72,19 +72,15 @@ const AdminDashboard = () => {
   const [agentPerformance, setAgentPerformance] = useState([]);
   const [popularProperties, setPopularProperties] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [period, setPeriod] = useState('monthly');
   const [refDate, setRefDate] = useState(todayStr);
-
   const sixDaysAgo = new Date();
   sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
   const sixDaysAgoStr = sixDaysAgo.toISOString().split('T')[0];
   const currentMonthStr = todayStr.substring(0, 7);
-
   const [startDate, setStartDate] = useState(sixDaysAgoStr);
   const [endDate, setEndDate] = useState(todayStr);
   const [refMonth, setRefMonth] = useState(currentMonthStr);
-
   // Nuevos estados para agenda y rendimiento de asesores
   const [agents, setAgents] = useState([]);
   const [performanceTab, setPerformanceTab] = useState('in-process');
@@ -226,8 +222,6 @@ const AdminDashboard = () => {
   return (
     <RoleGuard allowedRoles={['Admin']}>
       <main className="mx-auto w-full max-w-screen-2xl space-y-12 px-6 py-8 md:px-12 md:py-10">
-        
-        {/* CABECERA Y ACCIONES PRINCIPALES */}
         <section className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between border-b border-neutral-900 pb-8">
           <div className="space-y-unit-sm">
             <p className="font-caption text-caption uppercase tracking-widest text-primary">
@@ -260,8 +254,7 @@ const AdminDashboard = () => {
             </button>
           </div>
         </section>
-
-        {/* TARJETAS DE CONTADORES PRINCIPALES (KPIs) */}
+        {/* TARJETAS DE CONTADORES PRINCIPALES */}
         <section className="space-y-4">
           <h2 className="font-subtitle text-xs uppercase tracking-widest text-neutral-400">
             Métricas de Solicitudes Activas
@@ -344,7 +337,6 @@ const AdminDashboard = () => {
               Métricas de Interés y Tráfico Temporal
             </h2>
           </div>
-          
           <article className="glass-panel flex h-[450px] flex-col p-unit-lg border-t-2 border-primary/20">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -451,18 +443,15 @@ const AdminDashboard = () => {
             <div className="flex-grow items-end justify-between gap-3 border-b border-neutral-800 px-2 pb-4 flex md:gap-6 md:px-6 h-[250px]">
               {dynamicMonthlyBars.map((bar, idx) => (
                 <div key={bar.label || idx} className="group relative flex w-full flex-col items-center justify-end gap-1 h-full">
-                  {/* Etiqueta del valor de solicitudes (siempre visible arriba de la barra) */}
                   <span className={`text-xs font-bold transition-all duration-300 ${bar.count > 0 ? 'text-primary' : 'text-neutral-600'}`}>
                     {bar.count}
                   </span>
-                  
                   <div
                     className={`w-full rounded-t-sm transition-all duration-300 relative cursor-pointer ${
                       bar.count > 0 ? 'bg-primary' : 'bg-surface-container-highest group-hover:bg-primary/50'
                     }`}
                     style={{ height: bar.value }}
                   >
-                    {/* Tooltip al pasar el mouse */}
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black border border-primary/40 px-3 py-1 rounded text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold whitespace-nowrap z-30 shadow-xl">
                       {bar.count} {bar.count === 1 ? 'solicitud' : 'solicitudes'}
                     </div>
@@ -470,8 +459,6 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
-
-            {/* Etiquetas del Eje X */}
             <div className="mt-3 flex justify-between text-xs uppercase tracking-widest text-on-surface-variant font-subtitle px-2">
               {dynamicMonthlyBars.map((bar, idx) => (
                 <span key={bar.label || idx}>{bar.label}</span>
@@ -560,7 +547,7 @@ const AdminDashboard = () => {
           </div>
         </section>
 
-        {/* COLA DE ACTIVIDAD - FLUJO DE SOLICITUDES RECIENTES (DISEÑO AMPLIO) */}
+        {/* COLA DE ACTIVIDAD - FLUJO DE SOLICITUDES RECIENTES */}
         <section className="space-y-4">
           <div className="border-b border-neutral-800 pb-4">
             <h2 className="flex items-center gap-2 font-subtitle text-subtitle uppercase tracking-widest text-primary">
@@ -621,7 +608,7 @@ const AdminDashboard = () => {
           </div>
         </section>
 
-        {/* NUEVA SECCIÓN: RENDIMIENTO Y AGENDA DE ASESORES DETALLADA */}
+        {/* RENDIMIENTO Y AGENDA DE ASESORES DETALLADA */}
         <section className="space-y-6 pt-8 border-t border-neutral-900">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-neutral-800">
             <div>

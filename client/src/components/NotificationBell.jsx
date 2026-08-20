@@ -158,7 +158,8 @@ const NotificationBell = () => {
       window.sessionStorage.setItem('bellClicked', 'false');
       // Evitar notificaciones duplicadas en el cliente por seguridad
       setNotifications((prev) => {
-        if (prev.some((n) => n._id === notification._id)) return prev;
+        // Comparamos por visitId y type para asegurar que la misma visita no genere doble notificación
+        if (prev.some((n) => n.visitId === notification.visitId && n.type === notification.type)) return prev;
         const updated = [notification, ...prev];
         if (storageKey) {
           window.localStorage.setItem(storageKey, JSON.stringify(updated));
@@ -287,7 +288,7 @@ const NotificationBell = () => {
 
       {/* Menú Desplegable (Glassmorphism) */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 md:w-96 bg-[#121212]/95 border border-neutral-800 shadow-2xl backdrop-blur-md z-[100] rounded-none">
+        <div className="fixed left-4 right-4 top-[70px] w-auto max-w-none sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-80 md:w-96 bg-[#121212]/95 border border-neutral-600 border-b-4 border-b-[#D4AF37] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] backdrop-blur-md z-[100] rounded-none">
           <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
             <span className="font-caption text-xs uppercase tracking-widest text-white font-bold">
               Notificaciones
@@ -344,7 +345,6 @@ const NotificationBell = () => {
                       {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                  
                   <span className="material-symbols-outlined text-xs text-neutral-700 group-hover:text-primary transition-colors mt-0.5">
                     north_east
                   </span>

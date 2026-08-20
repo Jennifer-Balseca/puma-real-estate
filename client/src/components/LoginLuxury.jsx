@@ -192,7 +192,6 @@ const LoginLuxury = () => {
             </div>
 
             <h1 className="font-h1 text-h1 text-primary text-center md:text-on-surface">Acceso Exclusivo</h1>
-            
           </div>
 
           <form className="space-y-unit-lg md:space-y-6" onSubmit={handleSubmit}>

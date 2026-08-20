@@ -185,10 +185,10 @@ const AgentRequests = () => {
                   })()}
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <button onClick={() => { setSelected(v); setModalOpen(true); }} className="min-w-[160px] h-10 bg-primary-container text-on-primary-container font-subtitle text-sm uppercase tracking-widest hover:brightness-110">Ver detalles</button>
-                    <button onClick={() => handleAccept(v._id)} className="min-w-[140px] h-10 border border-neutral-800 text-sm">Aceptar visita</button>
+                <div className="flex flex-col gap-2 w-full xl:w-auto">
+                  <div className="flex flex-wrap gap-2 w-full">
+                    <button onClick={() => { setSelected(v); setModalOpen(true); }} className="flex-1 sm:flex-none min-w-[140px] h-10 bg-primary-container text-on-primary-container font-subtitle text-xs uppercase tracking-widest hover:brightness-110">Ver detalles</button>
+                    <button onClick={() => handleAccept(v._id)} className="flex-1 sm:flex-none min-w-[140px] h-10 border border-neutral-800 text-sm">Aceptar visita</button>
                   </div>
                 </div>
               </div>

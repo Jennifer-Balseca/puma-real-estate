@@ -151,7 +151,7 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-[#0b0b0b] rounded-lg w-full max-w-3xl shadow-lg overflow-x-hidden overflow-y-auto max-h-[90vh] border border-neutral-800">
+      <div className={`bg-[#0b0b0b] rounded-lg w-full max-w-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-x-hidden overflow-y-auto max-h-[90vh] border border-neutral-600 ${currentRole === 'admin' ? 'border-t-4 border-t-[#D4AF37]' : 'border-t-4 border-t-primary'}`}>
         <div className="flex items-center justify-between p-4 border-b border-neutral-900">
           <h3 className="text-lg font-semibold text-on-surface">Detalle de Solicitud</h3>
           <button className="text-neutral-400 hover:text-white" onClick={onClose}>Cerrar</button>

@@ -3,10 +3,20 @@ const { login, me, changePassword } = require('../controllers/authController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const rateLimit = require('express-rate-limit');
 
-const loginRateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // LÍMITE ALTO TEMPORAL PARA PRUEBAS
-    message: { message: 'Demasiados intentos de inicio de sesión. Intenta de nuevo en 15 minutos.' },
+// 1. Límite por IP 
+const loginIpRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 5,
+    message: { message: 'Demasiados intentos desde esta red. Intenta de nuevo en 15 minutos.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// 2. Límite por Correo 
+const loginEmailRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5, 
+    message: { message: 'Demasiados intentos para esta cuenta. Intenta de nuevo en 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => {
@@ -16,9 +26,8 @@ const loginRateLimiter = rateLimit({
 
 const router = express.Router();
 
-router.post('/login', loginRateLimiter, login);
+router.post('/login', loginIpRateLimiter, loginEmailRateLimiter, login);
 router.get('/me', authMiddleware, me);
 router.post('/change-password', authMiddleware, changePassword);
 
 module.exports = router;
-// Forzar reinicio de nodemon para limpiar el bloqueo de IP

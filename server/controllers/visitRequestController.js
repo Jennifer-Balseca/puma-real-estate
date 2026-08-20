@@ -23,7 +23,6 @@ const buildAppointmentPayloadFromVisit = (visit) => {
   if (!propertyId || !assignedAgentId) {
     return null;
   }
-
   return {
     visitRequestId: visit._id,
     propiedad: propertyId,
@@ -46,6 +45,15 @@ const normalizeVisitResponse = (visitDocument) => {
   obj.property = obj.propertyId || null;
   obj.assignedAgent = obj.assignedAgentId || null;
   return obj;
+};
+
+const timeSlotToMinutes = (timeSlot) => {
+  if (!timeSlot) return 0;
+  const parts = timeSlot.split(':');
+  if (parts.length < 2) return 0;
+  const hour = parseInt(parts[0], 10);
+  const minute = parseInt(parts[1].split(' ')[0], 10);
+  return hour * 60 + minute;
 };
 
 const withFollowUpNotes = (query) => query.populate('followUpNotes.createdBy', 'name email role');
@@ -133,10 +141,8 @@ const syncAppointmentForVisit = async (visit, nextStatus) => {
     existingAppointment.estado = appointmentPayload.estado;
     existingAppointment.agenteResponsable = appointmentPayload.agenteResponsable;
     await existingAppointment.save();
-
     return populateAppointment(existingAppointment._id);
   }
-
   const appointment = await Appointment.create(appointmentPayload);
   return populateAppointment(appointment._id);
 };
@@ -176,6 +182,31 @@ const createVisitRequest = async (req, res) => {
       return res.status(400).json({ message: 'Ya tienes una solicitud de visita activa y bajo revisión para esta propiedad.' });
     }
 
+    const targetDate = new Date(preferredDate);
+    const startOfDay = new Date(targetDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const sameDayVisits = await VisitRequest.find({
+      propertyId: propertyId,
+      preferredDate: { $gte: startOfDay, $lte: endOfDay },
+      status: 'in-process'
+    });
+
+    const newVisitMinutes = timeSlotToMinutes(timeSlot);
+
+    for (const v of sameDayVisits) {
+      if (v.timeSlot) {
+        const existingMinutes = timeSlotToMinutes(v.timeSlot);
+        if (Math.abs(existingMinutes - newVisitMinutes) < 60) {
+          return res.status(400).json({ 
+            message: `La propiedad ya tiene una visita agendada cerca de las ${v.timeSlot}. Por favor, selecciona un horario con al menos 1 hora de diferencia.` 
+          });
+        }
+      }
+    }
+
     // 2. Buscar propiedad y validar existencia y disponibilidad 
     const property = await Property.findById(propertyId);
     if (!property) return res.status(404).json({ message: 'Propiedad no encontrada.' });
@@ -196,7 +227,6 @@ const createVisitRequest = async (req, res) => {
       requestKey: normalizedRequestKey,
       createdBy: req.user?.id || null
     });
-
 
     const populated = await VisitRequest.findById(visit._id)
       .populate('propertyId')
@@ -256,7 +286,6 @@ const listVisitRequests = async (req, res) => {
       .populate('assignedAgentId', 'name email status')
       .populate('followUpNotes.createdBy', 'name email role');
 
-     
     const normalized = visits.map((v) => {
       return normalizeVisitResponse(v);
     });
@@ -285,7 +314,6 @@ const getVisitRequest = async (req, res) => {
     return res.status(500).json({ message: 'Error obteniendo la solicitud.' });
   }
 };
-
 // Admin asigna un agente
 const assignAgent = async (req, res) => {
   try {
@@ -302,7 +330,6 @@ const assignAgent = async (req, res) => {
 
     const agent = await User.findById(agentId);
     if (!agent) return res.status(404).json({ message: 'Agente no encontrado.' });
-
     // Validar conflicto de agenda
     const hasConflict = await checkAgentScheduleConflict(agentId, visit.preferredDate, visit.timeSlot, visit._id);
     if (hasConflict) {
@@ -355,29 +382,23 @@ const assignAgent = async (req, res) => {
     return res.status(500).json({ message: 'Error asignando agente.' });
   }
 };
-
 // Agent acepta una visita 
 const agentAccept = async (req, res) => {
   try {
     const { id } = req.params;
     const agentId = req.user?.id;
     if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'ID inválido.' });
-
     const visit = await VisitRequest.findById(id);
     if (!visit) return res.status(404).json({ message: 'Solicitud no encontrada.' });
-
     if (visit.status === 'finished' || visit.status === 'cancelled') {
       return res.status(400).json({ message: 'La visita ya está cerrada y no se puede modificar.' });
     }
-
     if (visit.status !== 'pending') {
       return res.status(400).json({ message: 'Solo se pueden aceptar solicitudes pendientes.' });
     }
-
     if (visit.assignedAgentId && String(visit.assignedAgentId) !== String(agentId)) {
       return res.status(403).json({ message: 'Solicitud ya asignada a otro agente.' });
     }
-
     // Validar conflicto de agenda
     const hasConflict = await checkAgentScheduleConflict(agentId, visit.preferredDate, visit.timeSlot, visit._id);
     if (hasConflict) {
@@ -419,7 +440,6 @@ const agentAccept = async (req, res) => {
     return res.status(500).json({ message: 'Error aceptando la solicitud.' });
   }
 };
-
 // Actualizar estado de la visita
 const updateVisitStatus = async (req, res) => {
   try {
@@ -632,7 +652,6 @@ module.exports = {
     try {
       const { id } = req.params;
       if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'ID inválido.' });
-
       const visit = await VisitRequest.findById(id)
         .populate('propertyId')
         .populate('assignedAgentId', 'name email status');
@@ -640,11 +659,9 @@ module.exports = {
       if (!visit) {
         return res.status(404).json({ message: 'Solicitud no encontrada.' });
       }
-
       if (visit.status === 'pending') {
         return res.status(400).json({ message: 'Primero cambia la solicitud a En proceso para generar la cita.' });
       }
-
       if (visit.status === 'finished' || visit.status === 'cancelled') {
         return res.status(400).json({ message: 'La visita ya está cerrada y no se puede modificar.' });
       }
@@ -654,7 +671,6 @@ module.exports = {
       if (!appointment) {
         return res.status(400).json({ message: 'No se pudo generar la cita.' });
       }
-
       return res.status(200).json({ appointment, visit });
     } catch (err) {
       console.error(err);

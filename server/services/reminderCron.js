@@ -1,8 +1,6 @@
 const cron = require('node-cron');
 const VisitRequest = require('../models/visitRequest');
 const User = require('../models/User');
-
-// Caché en memoria para evitar enviar alertas duplicadas
 const sentRemindersCache = new Set();
 
 const initReminderCron = (io) => {
@@ -112,17 +110,14 @@ const initReminderCron = (io) => {
         const propertyTitle = visit.propertyId?.titulo || 'Propiedad de lujo';
         const agentId = String(visit.assignedAgentId._id);
         const agentName = visit.assignedAgentId.name;
-        
-        // Formato legible de hora
         const timeStr = visit.timeSlot || visit.preferredDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         // Caso 1: Próximas 2 horas (Urgente)
         if (preferredTime <= next2h.getTime()) {
           const cacheKey2h = `${visitId}-2h`;
           if (!sentRemindersCache.has(cacheKey2h)) {
-            // Registrar como enviado
             sentRemindersCache.add(cacheKey2h);
-            sentRemindersCache.add(`${visitId}-24h`); // También marcar 24h para no duplicar
+            sentRemindersCache.add(`${visitId}-24h`);
 
             const notification = {
               _id: `rem-2h-${visitId}-${Date.now()}`,
@@ -139,7 +134,7 @@ const initReminderCron = (io) => {
             io.to('admin').emit('notification:new', notification);
           }
         }
-        // Caso 2: Próximas 24 horas (Recordatorio estándar)
+        // Caso 2: Próximas 24 horas 
         else if (preferredTime <= next24h.getTime()) {
           const cacheKey24h = `${visitId}-24h`;
           if (!sentRemindersCache.has(cacheKey24h)) {

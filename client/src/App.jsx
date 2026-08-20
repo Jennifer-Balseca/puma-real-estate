@@ -23,6 +23,7 @@ import PropertyDetail from './pages/PropertyDetail';
 import Contacto from './pages/Contacto';
 import socket from './socket';
 import { emitPropertiesRefresh } from './utils/propertyEvents';
+import MobileFloatingButtons from './components/MobileFloatingButtons';
 
 const App = () => {
   const { initializing, isAuthenticated, role, user } = useAuth();
@@ -30,7 +31,6 @@ const App = () => {
   useEffect(() => {
     if (isAuthenticated && user?._id) {
       socket.emit('auth:join', { userId: user._id, role: role || user.role || user.rol });
-      console.log('Socket emitted auth:join for user:', user._id);
     }
   }, [isAuthenticated, user, role]);
 
@@ -53,8 +53,10 @@ const App = () => {
   }
 
   return (
-    <Routes>
-      <Route
+    <>
+      <MobileFloatingButtons />
+      <Routes>
+        <Route
         path="/"
         element={
           isAuthenticated ? (
@@ -94,8 +96,9 @@ const App = () => {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/inicio" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/inicio" replace />} />
+      </Routes>
+    </>
   );
 };
 

@@ -166,7 +166,7 @@ const AdminVisitRequests = () => {
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-6 border-b border-neutral-900 pb-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6 border-b border-neutral-900 pb-4">
           <div className="flex items-center gap-2 flex-wrap">
             <button type="button" onClick={() => setActiveTab('pending')} className={`px-4 py-2 text-xs uppercase tracking-widest border ${activeTab === 'pending' ? 'border-primary-container bg-primary-container text-black' : 'border-neutral-800 text-on-surface-variant'}`}>
               Pendientes
@@ -239,12 +239,12 @@ const AdminVisitRequests = () => {
                   })()}
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <button onClick={() => handleOpen(v)} className="min-w-[160px] h-10 bg-primary-container text-on-primary-container font-subtitle text-sm uppercase tracking-widest hover:brightness-110">Ver detalles</button>
+                <div className="flex flex-col gap-2 w-full xl:w-auto">
+                  <button onClick={() => handleOpen(v)} className="w-full xl:min-w-[160px] h-10 bg-primary-container text-on-primary-container font-subtitle text-xs uppercase tracking-widest hover:brightness-110">Ver detalles</button>
 
-                  <div className="flex gap-2">
-                    <button onClick={() => { setSelected(v); setModalOpen(true); }} className="min-w-[140px] h-10 border border-neutral-800 text-sm" disabled={v.status === 'finished' || v.status === 'cancelled'}>Asignar agente</button>
-                    <div className="w-32">
+                  <div className="flex flex-wrap gap-2 w-full">
+                    <button onClick={() => { setSelected(v); setModalOpen(true); }} className="flex-1 sm:flex-none min-w-[140px] h-10 border border-neutral-800 text-sm" disabled={v.status === 'finished' || v.status === 'cancelled'}>Asignar agente</button>
+                    <div className="flex-1 sm:flex-none w-full sm:w-32">
                       <CustomSelect 
                         value={v.status} 
                         onChange={(e) => handleChangeStatus(v._id, e.target.value)} 
@@ -269,9 +269,6 @@ const AdminVisitRequests = () => {
             );
           })}
         </div>
-
-
-
         {modalOpen && selected && (
           <VisitDetailModal
             open={modalOpen}

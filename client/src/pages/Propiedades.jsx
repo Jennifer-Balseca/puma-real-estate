@@ -267,12 +267,10 @@ const Propiedades = () => {
             </button>
             <div className={`w-full transition-all duration-500 ease-in-out ${showMoreFilters ? 'max-h-[500px] opacity-100 mt-6 overflow-visible' : 'max-h-0 opacity-0 mt-0 overflow-hidden'}`}>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                
                 <div className="relative group">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 material-symbols-outlined text-[20px] group-focus-within:text-[#E5C158] transition-colors">bed</span>
                   <input type="number" placeholder="Habitaciones mínimas" value={filters.minRooms} onChange={(e) => updateFilters({ minRooms: e.target.value })} className="h-[52px] w-full border border-white/20 bg-white/10 rounded-xl pl-12 pr-4 text-white outline-none transition-all placeholder:text-neutral-500 focus:border-[#D4AF37] focus:bg-white/20 focus:shadow-[0_0_10px_rgba(212,175,55,0.15)]" />
                 </div>
-                
                 <div className="relative group">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 material-symbols-outlined text-[20px] group-focus-within:text-[#E5C158] transition-colors">shower</span>
                   <input type="number" placeholder="Baños mínimos" value={filters.minBanos} onChange={(e) => updateFilters({ minBanos: e.target.value })} className="h-[52px] w-full border border-white/20 bg-white/10 rounded-xl pl-12 pr-4 text-white outline-none transition-all placeholder:text-neutral-500 focus:border-[#D4AF37] focus:bg-white/20 focus:shadow-[0_0_10px_rgba(212,175,55,0.15)]" />

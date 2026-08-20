@@ -112,16 +112,17 @@ const HomePage = () => {
             Encuentra tu próximo legado
           </h1>
 
-          <form onSubmit={handleSubmit} className="w-full max-w-2xl bg-surface-container-low border border-neutral-800 p-2 flex items-center shadow-2xl">
-            <span className="material-symbols-outlined px-4 text-neutral-500">search</span>
-            <input
-              className="bg-transparent border-none focus:ring-0 w-full text-white placeholder-neutral-500 font-body py-4"
-              placeholder="Ubicación, estilo o amenidad..."
-              value={filters.q}
-              onChange={(e) => updateFilters({ q: e.target.value })}
-            />
-
-            <button className="bg-primary-container text-on-primary-container px-6 py-3 font-subtitle uppercase tracking-widest text-xs hover:bg-primary transition-colors">
+          <form onSubmit={handleSubmit} className="w-full max-w-2xl bg-surface-container-low border border-neutral-800 p-2 flex flex-col sm:flex-row items-center gap-2 shadow-2xl">
+            <div className="flex items-center w-full flex-1">
+              <span className="material-symbols-outlined px-4 text-neutral-500">search</span>
+              <input
+                className="bg-transparent border-none focus:ring-0 w-full text-white placeholder-neutral-500 font-body py-3 sm:py-4"
+                placeholder="Ubicación, estilo o amenidad..."
+                value={filters.q}
+                onChange={(e) => updateFilters({ q: e.target.value })}
+              />
+            </div>
+            <button className="bg-primary-container text-on-primary-container w-full sm:w-auto px-6 py-4 sm:py-3 font-subtitle uppercase tracking-widest text-xs hover:bg-primary transition-colors flex-shrink-0">
               Buscar
             </button>
           </form>
