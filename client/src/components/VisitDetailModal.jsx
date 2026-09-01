@@ -186,7 +186,12 @@ const VisitDetailModal = ({ open, onClose, visit, onUpdated }) => {
                   </div>
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-on-surface-variant">No se encontró la propiedad vinculada.</p>
+                <div className="mt-2 p-3 bg-red-950/20 border border-red-900/50 rounded">
+                  <p className="text-sm text-red-400 font-medium flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base">warning</span>
+                    Esta propiedad ha sido eliminada del catálogo.
+                  </p>
+                </div>
               )}
             </div>
           </section>

@@ -177,7 +177,9 @@ const createVisitRequest = async (req, res) => {
       
       const totalMinutes = h * 60 + m;
       const currentMinutes = today.getHours() * 60 + today.getMinutes();
-      if (totalMinutes <= currentMinutes + 180) {
+      if (totalMinutes <= currentMinutes) {
+        return res.status(400).json({ message: 'La hora seleccionada ya ha pasado.' });
+      } else if (totalMinutes <= currentMinutes + 180) {
         return res.status(400).json({ message: 'Para visitas el mismo día, requerimos un mínimo de 3 horas de anticipación para coordinar la presentación del inmueble.' });
       }
     }

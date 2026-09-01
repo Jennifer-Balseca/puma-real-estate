@@ -212,7 +212,7 @@ const AdminVisitRequests = () => {
                   <span className="material-symbols-outlined text-primary text-sm">location_on</span>
                   <div>
                     <p className="font-caption text-outline text-xs uppercase mb-1">Ubicación</p>
-                    <p className="font-body text-on-surface-variant">{v.property?.titulo ?? 'Cargando...'}</p>
+                    <p className="font-body text-on-surface-variant">{v.property?.titulo ?? 'Propiedad Eliminada'}</p>
                   </div>
                 </div>
 
