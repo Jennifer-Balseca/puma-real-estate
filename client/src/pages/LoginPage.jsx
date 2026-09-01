@@ -14,6 +14,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
   const wait = (ms) => new Promise((resolve) => {
     window.setTimeout(resolve, ms);
@@ -79,7 +80,14 @@ const LoginPage = () => {
         ? 'No se pudo conectar con el servidor. Intenta nuevamente en unos segundos.'
         : (loginError.response?.data?.message || loginError.message || 'No se pudo iniciar sesion.');
 
-      setError(friendlyMessage);
+      const newFailedAttempts = failedAttempts + 1;
+      setFailedAttempts(newFailedAttempts);
+
+      if (newFailedAttempts >= 3 && !hasNoResponse && loginError.response?.status !== 429) {
+        setError('Múltiples intentos fallidos. Si olvidó su contraseña, por favor contacte al Administrador del sistema.');
+      } else {
+        setError(friendlyMessage);
+      }
     } finally {
       setStatusMessage('');
       setLoading(false);
@@ -163,9 +171,6 @@ const LoginPage = () => {
                 />
                 Recordarme
               </label>
-              <a href="#" className="font-caption text-xs text-primary-container transition-colors hover:underline">
-                ¿Olvidó su contraseña?
-              </a>
             </div>
 
             <button
