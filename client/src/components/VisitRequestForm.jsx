@@ -99,7 +99,9 @@ const VisitRequestForm = ({ propertyId }) => {
       } else if (date === minDate) {
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        if (totalMinutes <= currentMinutes + 180) {
+        if (totalMinutes <= currentMinutes) {
+          e.time = 'La hora seleccionada ya ha pasado.';
+        } else if (totalMinutes <= currentMinutes + 180) {
           e.time = 'Para visitas el mismo día, requerimos un mínimo de 3 horas de anticipación para coordinar la presentación del inmueble.';
         }
       }
