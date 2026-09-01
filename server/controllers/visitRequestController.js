@@ -5,7 +5,8 @@ const Property = require('../models/Property');
 const User = require('../models/User');
 
 const isValidEmail = (email) => {
-  return typeof email === 'string' && /\S+@\S+\.\S+/.test(email);
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return typeof email === 'string' && emailRegex.test(email);
 };
 
 const isValidPhone = (phone) => {
@@ -159,6 +160,27 @@ const createVisitRequest = async (req, res) => {
     if (!preferredDate || isNaN(Date.parse(preferredDate))) return res.status(400).json({ message: 'preferredDate inválida.' });
     if (!timeSlot || !String(timeSlot).trim()) return res.status(400).json({ message: 'timeSlot es obligatorio.' });
     if (!requestKey || !String(requestKey).trim()) return res.status(400).json({ message: 'requestKey es obligatorio.' });
+    
+    // Validar anticipación de 3 horas para visitas
+    const visitDateStr = preferredDate.split('T')[0];
+    const today = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+    if (visitDateStr === todayStr) {
+      const parts = timeSlot.split(':');
+      let h = parseInt(parts[0], 10);
+      const ampm = parts[1].split(' ')[1];
+      const m = parseInt(parts[1].split(' ')[0], 10);
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      
+      const totalMinutes = h * 60 + m;
+      const currentMinutes = today.getHours() * 60 + today.getMinutes();
+      if (totalMinutes <= currentMinutes + 180) {
+        return res.status(400).json({ message: 'Para visitas el mismo día, requerimos un mínimo de 3 horas de anticipación para coordinar la presentación del inmueble.' });
+      }
+    }
 
     const normalizedRequestKey = String(requestKey).trim();
     const existingRequest = await VisitRequest.findOne({ requestKey: normalizedRequestKey })
@@ -282,6 +304,7 @@ const listVisitRequests = async (req, res) => {
     if (agentId && mongoose.isValidObjectId(agentId)) q.assignedAgentId = agentId;
 
     const visits = await VisitRequest.find(q)
+      .sort({ createdAt: -1 })
       .populate('propertyId', 'titulo ubicacion precio imagenes estado')
       .populate('assignedAgentId', 'name email status')
       .populate('followUpNotes.createdBy', 'name email role');

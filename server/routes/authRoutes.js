@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 // 1. Límite por IP 
 const loginIpRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
-    max: 5,
+    max: 10,
     message: { message: 'Demasiados intentos desde esta red. Intenta de nuevo en 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -15,7 +15,7 @@ const loginIpRateLimiter = rateLimit({
 // 2. Límite por Correo 
 const loginEmailRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5, 
+    max: 10, 
     message: { message: 'Demasiados intentos para esta cuenta. Intenta de nuevo en 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
