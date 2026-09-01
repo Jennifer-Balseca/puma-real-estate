@@ -18,7 +18,7 @@ const propertySchema = new mongoose.Schema({
         default: 'Disponible', 
         enum: ['Disponible', 'Vendida', 'Alquilada'] 
     },
-    precio: { type: Number, required: true, min: 50, max: 99000000 },
+    precio: { type: Number, required: true, min: 50, max: 999000000 },
     ubicacion: {
         direccion: { type: String, required: true },
         ciudad: { type: String, default: 'Quito' },

@@ -263,7 +263,7 @@ const createVisitRequest = async (req, res) => {
       io.emit('visit:created', { visit: payloadVisit });
       
       const notification = {
-        _id: `new-visit-${visit._id}-${Date.now()}`,
+        _id: `visit-${visit._id}-pending`,
         title: 'Nueva solicitud de visita sin asignar',
         message: `Cliente: ${visit.fullName} para la propiedad "${populated.propertyId?.titulo || 'Propiedad'}".`,
         type: 'pending',
@@ -388,8 +388,8 @@ const assignAgent = async (req, res) => {
     if (io) {
       io.emit('visit:assigned', { visit: payloadVisit });
 
-      const notification = {
-        _id: `assign-visit-${visit._id}-${Date.now()}`,
+      const agentNotification = {
+        _id: `visit-${visit._id}-assigned`,
         title: 'Se te ha asignado una nueva visita',
         message: `Se te ha asignado la visita de ${visit.fullName} para la propiedad "${populatedVisit.propertyId?.titulo || 'Propiedad'}".`,
         type: 'assigned',
@@ -397,8 +397,7 @@ const assignAgent = async (req, res) => {
         read: false,
         createdAt: new Date()
       };
-      io.to(`user:${agentId}`).emit('notification:new', notification);
-      io.to('admin').emit('notification:new', notification);
+      io.to(`user:${agentId}`).emit('notification:new', agentNotification);
     }
 
     return res.json({ visit: payloadVisit });
@@ -446,8 +445,8 @@ const agentAccept = async (req, res) => {
       io.emit('visit:accepted', { visit: payloadVisit });
       if (appointment) io.emit('appointment:created', { appointment });
 
-      const notification = {
-        _id: `accept-visit-${visit._id}-${Date.now()}`,
+      const agentNotification = {
+        _id: `visit-${visit._id}-assigned`,
         title: 'Se te ha asignado una nueva visita',
         message: `Has tomado la visita de ${visit.fullName} para la propiedad "${populated.propertyId?.titulo || 'Propiedad'}".`,
         type: 'assigned',
@@ -455,8 +454,13 @@ const agentAccept = async (req, res) => {
         read: false,
         createdAt: new Date()
       };
-      io.to(`user:${agentId}`).emit('notification:new', notification);
-      io.to('admin').emit('notification:new', notification);
+      const adminNotification = {
+        ...agentNotification,
+        title: 'Visita en proceso',
+        message: `El agente ${populated.assignedAgentId?.name || 'seleccionado'} ha tomado la visita de ${visit.fullName}.`
+      };
+      io.to(`user:${agentId}`).emit('notification:new', agentNotification);
+      io.to('admin').emit('notification:new', adminNotification);
     }
 
     return res.json({ visit: payloadVisit });
