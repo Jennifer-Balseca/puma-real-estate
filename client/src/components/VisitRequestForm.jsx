@@ -4,7 +4,7 @@ import CustomSelect from './CustomSelect';
 import visitService from '../api/visitService';
 
 const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+$/;
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const phoneRegex = /^\d{10}$/;
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -99,8 +99,8 @@ const VisitRequestForm = ({ propertyId }) => {
       } else if (date === minDate) {
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        if (totalMinutes <= currentMinutes) {
-          e.time = 'La hora seleccionada ya ha pasado.';
+        if (totalMinutes <= currentMinutes + 180) {
+          e.time = 'Para visitas el mismo día, requerimos un mínimo de 3 horas de anticipación para coordinar la presentación del inmueble.';
         }
       }
     }

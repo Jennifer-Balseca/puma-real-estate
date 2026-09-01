@@ -491,8 +491,7 @@ const AdminAgentes = () => {
                       value={agentForm.role}
                       onChange={handleFormChange}
                       options={[
-                        { value: 'Agente', label: 'Agente' },
-                        { value: 'Admin', label: 'Admin' }
+                        { value: 'Agente', label: 'Agente' }
                       ]}
                       className="h-12 border-neutral-800"
                     />
