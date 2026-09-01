@@ -19,6 +19,8 @@ const roleStyles = {
 const AdminAgentes = () => {
   const navigate = useNavigate();
   const [agents, setAgents] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const agentsPerPage = 10;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState('');
@@ -256,11 +258,16 @@ const AdminAgentes = () => {
           <div className="border border-neutral-800 bg-surface-container p-6 text-center text-secondary">
             Cargando agentes...
           </div>
-        ) : (
+        ) : (() => {
+          const totalPages = Math.ceil(agents.length / agentsPerPage);
+          const safeCurrentPage = Math.min(currentPage, Math.max(1, totalPages));
+          const currentAgents = agents.slice((safeCurrentPage - 1) * agentsPerPage, safeCurrentPage * agentsPerPage);
+          
+          return (
           <>
             <div className="md:hidden">
               <div className="mt-4 flex flex-col gap-4">
-                {agents.map((agent) => {
+                {currentAgents.map((agent) => {
                   const status = agent.status || agent.estado || 'Inactivo';
                   const role = agent.role || agent.rol || 'Agente';
                   const fullName = agent.name || agent.fullName || agent.email?.split('@')?.[0] || 'Agente';
@@ -332,7 +339,7 @@ const AdminAgentes = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-900">
-                    {agents.map((agent) => {
+                    {currentAgents.map((agent) => {
                       const status = agent.status || agent.estado || 'Inactivo';
                       const role = agent.role || agent.rol || 'Agente';
                       const fullName = agent.name || agent.fullName || agent.email?.split('@')?.[0] || 'Agente';
@@ -396,24 +403,45 @@ const AdminAgentes = () => {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between border-t border-neutral-900 bg-black/20 px-8 py-4">
-                <span className="font-caption text-neutral-600">Mostrando {summary.total} agentes</span>
-                <div className="flex gap-2">
-                  <button type="button" className="flex h-8 w-8 items-center justify-center border border-neutral-800 text-neutral-600 transition-colors hover:text-white">
-                    <span className="material-symbols-outlined text-sm">chevron_left</span>
-                  </button>
-                  <button type="button" className="flex h-8 w-8 items-center justify-center border border-primary text-primary">1</button>
-                  <button type="button" className="flex h-8 w-8 items-center justify-center border border-neutral-800 text-neutral-400 transition-colors hover:border-primary">
-                    2
-                  </button>
-                  <button type="button" className="flex h-8 w-8 items-center justify-center border border-neutral-800 text-neutral-600 transition-colors hover:text-white">
-                    <span className="material-symbols-outlined text-sm">chevron_right</span>
-                  </button>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-neutral-900 bg-black/20 px-8 py-4">
+                  <span className="font-caption text-neutral-600">Mostrando {currentAgents.length} de {summary.total} agentes</span>
+                  <div className="flex gap-2">
+                    <button 
+                      type="button" 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={safeCurrentPage === 1}
+                      className="flex h-8 w-8 items-center justify-center border border-neutral-800 text-neutral-600 transition-colors hover:text-white disabled:opacity-50 disabled:hover:text-neutral-600"
+                    >
+                      <span className="material-symbols-outlined text-sm">chevron_left</span>
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button 
+                        key={page}
+                        type="button" 
+                        onClick={() => setCurrentPage(page)}
+                        className={`flex h-8 w-8 items-center justify-center border ${safeCurrentPage === page ? 'border-primary text-primary' : 'border-neutral-800 text-neutral-400 transition-colors hover:border-primary'}`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    
+                    <button 
+                      type="button" 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={safeCurrentPage === totalPages}
+                      className="flex h-8 w-8 items-center justify-center border border-neutral-800 text-neutral-600 transition-colors hover:text-white disabled:opacity-50 disabled:hover:text-neutral-600"
+                    >
+                      <span className="material-symbols-outlined text-sm">chevron_right</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </>
-        )}
+          );
+        })()}
 
         {isModalOpen ? (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm md:items-center">
@@ -483,19 +511,12 @@ const AdminAgentes = () => {
                     </label>
                   )}
 
-                  <label className="space-y-2">
-                    <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Rol</span>
-                    <CustomSelect
-                      id="role"
-                      name="role"
-                      value={agentForm.role}
-                      onChange={handleFormChange}
-                      options={[
-                        { value: 'Agente', label: 'Agente' }
-                      ]}
-                      className="h-12 border-neutral-800"
-                    />
-                  </label>
+                  <div className="space-y-2">
+                    <span className="block text-xs font-bold uppercase tracking-[0.15em] text-primary-container">Rol asignado</span>
+                    <div className="flex h-12 w-full items-center border border-neutral-800 bg-[#1A1A1A] px-4 text-neutral-400 cursor-not-allowed font-medium">
+                      Agente
+                    </div>
+                  </div>
 
                   {modalMode === 'edit' && (
                     <label className="space-y-2 md:col-span-2">

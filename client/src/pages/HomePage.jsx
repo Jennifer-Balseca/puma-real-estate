@@ -17,9 +17,10 @@ const HomePage = () => {
   useEffect(() => {
     const loadLatest = async () => {
       try {
-        const res = await api.get(`/api/properties?t=${Date.now()}`);
+        const res = await api.get(`/api/properties?estado=Disponible&t=${Date.now()}`);
         const props = res.data?.properties || [];
-        setLatestProperties(props.slice(0, 3));
+        const availableProps = props.filter(p => p.estado === 'Disponible');
+        setLatestProperties(availableProps.slice(0, 3));
       } catch (e) {
         console.error('Error fetching latest properties:', e);
       }

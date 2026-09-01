@@ -56,7 +56,7 @@ const AgentNewProperty = () => {
 
     setFormData({
       titulo: editingProperty.titulo || '',
-      precio: editingProperty.precio ?? '',
+      precio: editingProperty.precio ? new Intl.NumberFormat('en-US').format(editingProperty.precio) : '',
       ubicacion: editingProperty.ubicacion?.direccion || '',
       ciudad: editingProperty.ubicacion?.ciudad || '',
       tipo: editingProperty.tipo || 'Casa',
@@ -158,6 +158,19 @@ const AgentNewProperty = () => {
     }));
   };
 
+  const handlePriceChange = (event) => {
+    let rawValue = event.target.value.replace(/\D/g, '');
+    if (rawValue === '') {
+      setFormData((prev) => ({ ...prev, precio: '' }));
+      return;
+    }
+    const numericValue = Number(rawValue);
+    if (numericValue > 99000000) return;
+    
+    const formattedValue = new Intl.NumberFormat('en-US').format(numericValue);
+    setFormData((prev) => ({ ...prev, precio: formattedValue }));
+  };
+
   const parseOptionalNumber = (value, label) => {
     if (value === '' || value === null || value === undefined) {
       return undefined;
@@ -200,20 +213,16 @@ const AgentNewProperty = () => {
     setError('');
     setSuccessMessage('');
 
-    const numericPrice = Number(formData.precio);
+    const rawPrice = String(formData.precio).replace(/\D/g, '');
+    const numericPrice = Number(rawPrice);
 
-    if (!Number.isFinite(numericPrice)) {
-      setError('El precio debe ser un número válido.');
-      return;
-    }
-
-    if (numericPrice < 0) {
-      setError('El precio no puede ser negativo.');
+    if (!Number.isFinite(numericPrice) || numericPrice < 50 || numericPrice > 99000000) {
+      setError('El precio debe ser un número válido entre $50 y $99,000,000.');
       return;
     }
 
     if (!formData.titulo.trim() || !formData.ubicacion.trim() || !formData.descripcion.trim() || !formData.ciudad?.trim()) {
-      setError('Completa todos los campos obligatorios (incluida la ciudad).');
+      setError('Completa todos los campos obligatorios.');
       return;
     }
 
@@ -287,7 +296,7 @@ const AgentNewProperty = () => {
             </button>
           </div>
           <p className="max-w-2xl text-sm text-[#C0C0C0] md:text-base">
-            Completa los datos para incorporar una nueva propiedad al catálogo sin recargar la página.
+            Completa los datos para agregar una nueva propiedad al catálogo.
           </p>
         </div>
 
@@ -314,13 +323,11 @@ const AgentNewProperty = () => {
             <input
               id="precio"
               name="precio"
-              type="number"
-              min="0"
-              step="0.01"
+              type="text"
               value={formData.precio}
-              onChange={handleChange}
+              onChange={handlePriceChange}
               className="h-14 md:h-12 w-full border border-white/10 bg-white/5 px-4 text-white outline-none focus:border-[#D4AF37] focus:shadow-[0_0_10px_rgba(212,175,55,0.2)] transition-all"
-              placeholder="0.00"
+              placeholder="Ej. 1,500"
             />
           </div>
 
