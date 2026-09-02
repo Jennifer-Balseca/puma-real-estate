@@ -30,6 +30,26 @@ const PropertyDetail = () => {
     void load();
   }, [id, refreshTick]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const mediaCount = property?.imagenes?.length || property?.mediaUrls?.length || 0;
+      if (mediaCount <= 1) return;
+      
+      if (e.key === 'ArrowRight') {
+        if (zoomOpen) setZoomIndex((i) => (i + 1) % mediaCount);
+        else setActiveIndex((i) => (i + 1) % mediaCount);
+      } else if (e.key === 'ArrowLeft') {
+        if (zoomOpen) setZoomIndex((i) => (i - 1 + mediaCount) % mediaCount);
+        else setActiveIndex((i) => (i - 1 + mediaCount) % mediaCount);
+      } else if (e.key === 'Escape' && zoomOpen) {
+        setZoomOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [property, zoomOpen]);
+
   if (loading) return <div className="pt-20 p-6 text-neutral-400">Cargando propiedad...</div>;
   if (error) return <div className="pt-20 p-6 text-red-400">{error}</div>;
   if (!property) return <div className="pt-20 p-6 text-neutral-400">Propiedad no encontrada.</div>;
@@ -96,7 +116,7 @@ const PropertyDetail = () => {
 
             <div className="mt-6 space-y-4 text-neutral-400">
               <h2 className="font-h1 text-2xl text-white">Descripción</h2>
-              <p className="text-lg leading-relaxed">{property.descripcion}</p>
+              <p className="text-lg leading-relaxed whitespace-pre-line">{property.descripcion}</p>
             </div>
 
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">

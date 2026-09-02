@@ -78,7 +78,7 @@ const NotificationBell = () => {
             } else {
               title = isExpired ? 'Visita vencida' : 'Visita en proceso';
               message = `La visita de ${v.fullName} está en proceso con ${v.assignedAgentId?.name || 'un agente'}.`;
-              type = isExpired ? 'reminder' : 'assigned';
+              type = isExpired ? 'reminder' : 'admin_assigned';
             }
           } else {
             if (v.status === 'pending') {
@@ -249,7 +249,7 @@ const NotificationBell = () => {
       }
     } else {
       // Agente
-      if (notification.type === 'reminder') {
+      if (notification.type === 'reminder' || notification.type === 'assigned') {
         navigate(`/agente/agenda${visitId ? `?visitId=${visitId}` : ''}`);
       } else if (visitId) {
         navigate(`/agente/solicitudes?visitId=${visitId}`);
@@ -263,6 +263,7 @@ const NotificationBell = () => {
     pending: 'border-l-4 border-primary-container bg-primary-container/10 text-primary-container',
     reminder: 'border-l-4 border-sky-500 bg-sky-500/10 text-sky-500',
     assigned: 'border-l-4 border-emerald-500 bg-emerald-500/10 text-emerald-500',
+    admin_assigned: 'border-l-4 border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]',
   };
 
   return (

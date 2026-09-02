@@ -165,7 +165,7 @@ const AgentNewProperty = () => {
       return;
     }
     const numericValue = Number(rawValue);
-    if (numericValue > 99000000) return;
+    if (numericValue > 999000000) return;
     
     const formattedValue = new Intl.NumberFormat('en-US').format(numericValue);
     setFormData((prev) => ({ ...prev, precio: formattedValue }));
@@ -216,8 +216,8 @@ const AgentNewProperty = () => {
     const rawPrice = String(formData.precio).replace(/\D/g, '');
     const numericPrice = Number(rawPrice);
 
-    if (!Number.isFinite(numericPrice) || numericPrice < 50 || numericPrice > 99000000) {
-      setError('El precio debe ser un número válido entre $50 y $99,000,000.');
+    if (!Number.isFinite(numericPrice) || numericPrice < 50 || numericPrice > 999000000) {
+      setError('El precio debe ser un número válido entre $50 y $999,000,000.');
       return;
     }
 
